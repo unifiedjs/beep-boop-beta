@@ -1,0 +1,99 @@
+{
+  "private": true,
+  "name": "beep-boop-beta",
+  "version": "0.0.0",
+  "description": "Automaton for unified",
+  "license": "MIT",
+  "keywords": [],
+  "repository": "unifiedjs/beep-boop-beta",
+  "bugs": "https://github.com/unifiedjs/beep-boop-beta/issues",
+  "author": "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)",
+  "contributors": [
+    "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)"
+  ],
+  "main": "index.js",
+  "files": [
+    "lib/",
+    "index.js"
+  ],
+  "devDependencies": {
+    "@actions/core": "^1.0.0",
+    "@actions/github": "^4.0.0",
+    "@vercel/ncc": "^0.28.0",
+    "js-yaml": "^4.0.0",
+    "mdast-util-to-string": "^2.0.0",
+    "minimatch": "^3.0.0",
+    "ms": "^2.0.0",
+    "node-fetch": "^2.0.0",
+    "prettier": "^2.0.0",
+    "remark-cli": "^9.0.0",
+    "remark-frontmatter": "^3.0.0",
+    "remark-gfm": "^1.0.0",
+    "remark-parse": "^9.0.0",
+    "remark-preset-wooorm": "^8.0.0",
+    "remark-stringify": "^9.0.0",
+    "similarity": "^1.0.0",
+    "stringify-entities": "^3.0.0",
+    "unified": "^9.0.0",
+    "unist-builder": "^2.0.0",
+    "unist-util-is": "^4.0.0",
+    "unist-util-visit": "^2.0.0",
+    "vfile": "^4.0.0",
+    "vfile-matter": "^2.0.0",
+    "xo": "^0.38.0"
+  },
+  "scripts": {
+    "format": "remark . -qfo && prettier . --write && xo --fix",
+    "build": "ncc build main.js -o . --license license",
+    "test": "npm run format && npm run build"
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "useTabs": false,
+    "singleQuote": true,
+    "bracketSpacing": false,
+    "semi": false,
+    "trailingComma": "none"
+  },
+  "xo": {
+    "esnext": false,
+    "prettier": true,
+    "rules": {
+      "camelcase": "off",
+      "complexity": "off",
+      "guard-for-in": "off",
+      "no-await-in-loop": "off",
+      "unicorn/explicit-length-check": "off",
+      "unicorn/no-fn-reference-in-iterator": "off",
+      "unicorn/prefer-number-properties": "off",
+      "unicorn/prefer-set-has": "off",
+      "unicorn/prefer-type-error": "off"
+    }
+  },
+  "remarkConfig": {
+    "plugins": [
+      "frontmatter",
+      "preset-wooorm",
+      [
+        "lint-first-heading-level",
+        false
+      ],
+      [
+        "lint-maximum-line-length",
+        false
+      ],
+      [
+        "lint-no-html",
+        false
+      ],
+      [
+        "lint-rule-style",
+        false
+      ],
+      [
+        "lint-no-missing-blank-lines",
+        false
+      ]
+    ]
+  }
+}

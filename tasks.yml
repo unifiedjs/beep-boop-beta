@@ -1,0 +1,163 @@
+# Start process.
+- if: on:post-opened
+  then: add-labels:phase/new
+- if: on:post-closed
+  then:
+    - if: has-labels:phase/new
+      if-not: has-labels:no/*
+      then: add-labels:no/invalid
+    - if: has-labels:phase/open
+      if-not: has-labels:no/*
+      then: add-labels:no/invalid
+- if: on:post-reopened
+  then: remove-labels:phase/no
+
+# New issue.
+- if: on:post-labeled:phase/new
+  then:
+    - remove-labels:phase/{no,open,solved,yes}
+    - reopen-post
+    # Start auto triage.
+    - if: custom:check-template:missing
+      then:
+        - comment:template,new-template-missing
+        - unminimize-comments:template
+    - if: custom:check-template:incorrect
+      then:
+        - comment:template,new-template-check
+        - unminimize-comments:template
+    # Stop auto triage.
+    - if: custom:check-template:correct
+      then: add-labels:phase/open
+# Update auto triage.
+- if: on:post-edited
+  then:
+    - if: custom:check-template:missing
+      then:
+        - comment:template,new-template-missing
+        - unminimize-comments:template
+    - if: custom:check-template:incorrect
+      then:
+        - comment:template,new-template-check
+        - unminimize-comments:template
+    - if: custom:check-template:correct
+      then:
+        - add-labels:phase/open
+        - minimize-comments:template
+- if: on:post-unlabeled:phase/new
+  then: minimize-comments:template
+
+# Start manual triage.
+- if: on:post-labeled:phase/open
+  then:
+    - remove-labels:phase/{new,no,solved,yes}
+    - reopen-post
+- if: on:post-unlabeled:phase/open
+  then:
+    - remove-labels:open/*
+    - forget-comments:open
+    - minimize-comments:open
+- if: on:post-labeled:open/multiple
+  then:
+    - remove-labels:open/{needs-info,needs-repro}
+    - reopen-post
+    - comment:open,open-multiple
+    - unminimize-comments:open
+- if: on:post-unlabeled:open/multiple
+  then: minimize-comments:open
+- if: on:post-labeled:open/needs-info
+  then:
+    - remove-labels:open/{multiple,needs-repro}
+    - reopen-post
+    - comment:open,open-needs-info
+    - unminimize-comments:open
+- if: on:post-unlabeled:open/needs-info
+  then: minimize-comments:open
+- if: on:post-labeled:open/needs-repro
+  then:
+    - remove-labels:open/{multiple,needs-info}
+    - reopen-post
+    - comment:open,open-needs-repro
+    - unminimize-comments:open
+- if: on:post-unlabeled:open/needs-repro
+  then: minimize-comments:open
+- if: on:post-labeled:open/*
+  then: add-labels:phase/open
+- if: on:post-unlabeled:open/*
+  if-not: has-labels:open/*
+  then: remove-labels:phase/open
+
+# Nope.
+- if: on:post-labeled:phase/no
+  then:
+    - remove-labels:phase/{new,open,solved,yes}
+    - close-post
+- if: on:post-unlabeled:phase/no
+  then:
+    - remove-labels:no/*
+    - reopen-post
+    - minimize-comments:no
+    - forget-comments:no
+- if: on:post-labeled:no/duplicate
+  then:
+    - remove-labels:no/{external,invalid,question,wontfix}
+    - unminimize-comments:no
+    - comment:no,no-duplicate
+    - sleep:30s
+    - if-not: marked-as-duplicate
+      then:
+        - comment:no-duplicate-maintainers
+        - forget-comments:no-duplicate-maintainers
+- if: on:post-labeled:no/external
+  then:
+    - remove-labels:no/{duplicate,invalid,question,wontfix}
+    - sleep:30s
+    - if-not: recent-comment:team
+      then:
+        - comment:no,no-external-maintainers
+        - forget-comments:no
+- if: on:post-labeled:no/invalid
+  then: remove-labels:no/{duplicate,external,question,wontfix}
+- if: on:post-labeled:no/question
+  then:
+    - remove-labels:no/{duplicate,external,invalid,wontfix}
+    - unminimize-comments:no
+    - comment:no,no-question
+- if: on:post-labeled:no/wontfix
+  then:
+    - remove-labels:no/{duplicate,external,invalid,question}
+    - sleep:30s
+    - if-not: recent-comment:team
+      then:
+        - comment:no,no-wontfix
+        - forget-comments:no
+- if: on:post-labeled:no/*
+  then: add-labels:phase/no
+- if: on:post-unlabeled:no/*
+  if-not: has-labels:no/*
+  then: remove-labels:phase/no
+
+# Confirmed!
+- if: on:post-labeled:phase/yes
+  then:
+    - remove-labels:phase/{new,no,open,solved}
+    - reopen-post
+    - unminimize-comments:yes-maintainers
+    - comment:yes-maintainers
+- if: on:post-unlabeled:phase/yes
+  then:
+    - minimize-comments:yes-maintainers
+    - forget-comments:yes-maintainers
+
+# Solved: leave the rest to maintainers
+- if: on:post-labeled:phase/solved
+  then: remove-labels:phase/{new,no,open,yes}
+
+# Message when no phase labels exist.
+- if: on:post-unlabeled:phase/*
+  if-not: has-labels:phase/*
+  then: comment:phaseless
+- if: on:post-labeled:phase/*
+  then:
+    - minimize-comments:phaseless
+    - forget-comments:phaseless

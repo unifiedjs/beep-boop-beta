@@ -1,0 +1,7 @@
+inputs:
+  repo-token:
+    description: Token for the repository. Can be passed in using {{secrets.GITHUB_TOKEN}}
+    required: true
+runs:
+  using: node12
+  main: index.js
