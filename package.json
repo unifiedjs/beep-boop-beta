@@ -68,7 +68,10 @@
       "unicorn/prefer-number-properties": "off",
       "unicorn/prefer-set-has": "off",
       "unicorn/prefer-type-error": "off"
-    }
+    },
+    "ignores": [
+      "index.js"
+    ]
   },
   "remarkConfig": {
     "plugins": [

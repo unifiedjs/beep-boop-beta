@@ -1171,10 +1171,10 @@ function toSlug(value) {
       .replace(/[^\u0000-\u007F]/g, '')
       // Replace dash and underscore with a space.
       .replace(/[-_]/g, ' ')
-      // Replace multiple spaces
-      .replace(/\s+/g, '-')
       // Trim.
       .trim()
+      // Replace multiple spaces
+      .replace(/\s+/g, '-')
   )
 }
 
@@ -25840,13 +25840,14 @@ var __webpack_exports__ = {};
 
 
 var fs = __nccwpck_require__(5747)
+var path = __nccwpck_require__(5622)
 var yaml = __nccwpck_require__(1917)
 var beep = __nccwpck_require__(6278)
 var custom = __nccwpck_require__(4758)
 var renderers = __nccwpck_require__(4081)
 
 beep({
-  tasks: yaml.load(String(fs.readFileSync('tasks.yml'))),
+  tasks: yaml.load(String(fs.readFileSync(__nccwpck_require__.ab + "tasks.yml"))),
   plugins: [custom],
   renderers
 })
