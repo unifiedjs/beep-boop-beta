@@ -440,6 +440,13 @@ async function comment(ctx, event, value) {
   if (comment) {
     comment.body = body
     console.info('Comment `' + templateId + '` edited')
+  } else if (!result.data.addComment || !result.data.addComment.commentEdge) {
+    // <https://github.com/unifiedjs/beep-boop-beta/issues/5>
+    console.log()
+    console.log('data:', result.data)
+    console.log('id:', id)
+    console.log('body:', body)
+    throw new Error('Could not post comment `' + templateId + '`')
   } else {
     comments.push({
       body,
@@ -1669,11 +1676,20 @@ function getSections(tree, doc) {
 
 module.exports = templateNameFromMdast
 
-var is = __nccwpck_require__(4639)
+var is = __nccwpck_require__(5952)
+var visit = __nccwpck_require__(199)
 
 function templateNameFromMdast(tree) {
   var head = tree.children[0]
   var match = is(head, 'html') && /^<!--\s*([a-z\d-]+):/i.exec(head.value)
+  visit(tree, 'html', (node) => {
+    var newMatch = /^<!--do not edit: ([a-z\d-]+)-->$/i.exec(node.value)
+    if (newMatch) {
+      match = newMatch
+      return visit.EXIT
+    }
+  })
+
   return match && match[1].toLowerCase()
 }
 
@@ -26667,6 +26683,14 @@ function factory(key, options) {
 /***/ ((module) => {
 
 module.exports = eval("require")("encoding");
+
+
+/***/ }),
+
+/***/ 5952:
+/***/ ((module) => {
+
+module.exports = eval("require")("unist-util-is1");
 
 
 /***/ }),
