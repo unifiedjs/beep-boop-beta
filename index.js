@@ -1676,7 +1676,7 @@ function getSections(tree, doc) {
 
 module.exports = templateNameFromMdast
 
-var is = __nccwpck_require__(5952)
+var is = __nccwpck_require__(4639)
 var visit = __nccwpck_require__(199)
 
 function templateNameFromMdast(tree) {
@@ -26668,14 +26668,6 @@ module.exports = eval("require")("./pr-closed-maintainers");
 /***/ ((module) => {
 
 module.exports = eval("require")("encoding");
-
-
-/***/ }),
-
-/***/ 5952:
-/***/ ((module) => {
-
-module.exports = eval("require")("unist-util-is1");
 
 
 /***/ }),
