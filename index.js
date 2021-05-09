@@ -1578,8 +1578,10 @@ async function setupTemplates(ctx, event) {
     } else {
       console.info(
         'Incorrect template `' +
-          templates[index].name +
-          '`: expected comment name to start'
+          templates[index].file.path +
+          '` (`' +
+          templates[index].file.url +
+          '`): expected comment name to start'
       )
     }
   }
@@ -1682,6 +1684,7 @@ var visit = __nccwpck_require__(199)
 function templateNameFromMdast(tree) {
   var head = tree.children[0]
   var match = is(head, 'html') && /^<!--\s*([a-z\d-]+):/i.exec(head.value)
+
   visit(tree, 'html', (node) => {
     var newMatch = /^<!--do not edit: ([a-z\d-]+)-->$/i.exec(node.value)
     if (newMatch) {
