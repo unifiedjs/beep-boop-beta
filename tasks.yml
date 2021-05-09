@@ -4,16 +4,9 @@
 - if: on:post-closed
   then:
     - if: is:pr
-      then:
-        - comment:pr-closed-maintainers
+      then: comment:post-closed,post-closed-pr-maintainers
     - if: is:issue
-      then:
-        - if: has-labels:phase/new
-          if-not: has-labels:no/*
-          then: add-labels:no/invalid
-        - if: has-labels:phase/open
-          if-not: has-labels:no/*
-          then: add-labels:no/invalid
+      then: comment:post-closed,post-closed-issue-maintainers
 - if: on:post-reopened
   then: remove-labels:phase/no
 
@@ -96,8 +89,8 @@
 - if: on:post-labeled:phase/no
   then:
     - remove-labels:phase/{new,open,solved,yes}
-    - minimize-comments:pr-closed-maintainers
-    - forget-comments:pr-closed-maintainers
+    - minimize-comments:post-closed
+    - forget-comments:post-closed
     - close-post
 
 - if: on:post-unlabeled:phase/no
@@ -164,8 +157,8 @@
 - if: on:post-labeled:phase/solved
   then:
     - remove-labels:phase/{new,no,open,yes}
-    - minimize-comments:pr-closed-maintainers
-    - forget-comments:pr-closed-maintainers
+    - minimize-comments:post-closed
+    - forget-comments:post-closed
 
 # Message when no phase labels exist.
 - if: on:post-unlabeled:phase/*
