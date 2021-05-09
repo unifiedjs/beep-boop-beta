@@ -6,7 +6,6 @@
     - if: is:pr
       then:
         - comment:pr-closed-maintainers
-        - forget-comments:pr-closed-maintainers
     - if: is:issue
       then:
         - if: has-labels:phase/new
@@ -97,7 +96,10 @@
 - if: on:post-labeled:phase/no
   then:
     - remove-labels:phase/{new,open,solved,yes}
+    - minimize-comments:pr-closed-maintainers
+    - forget-comments:pr-closed-maintainers
     - close-post
+
 - if: on:post-unlabeled:phase/no
   then:
     - remove-labels:no/*
@@ -132,11 +134,14 @@
 - if: on:post-labeled:no/wontfix
   then:
     - remove-labels:no/{duplicate,external,invalid,question}
-    - sleep:30s
-    - if-not: recent-comment:team
+    - ifNot: recent-comment:team
       then:
         - comment:no,no-wontfix
-        - forget-comments:no
+        - sleep:5m
+        - if: recent-comment:team
+          then:
+            - minimize-comments:no
+            - forget-comments:no
 - if: on:post-labeled:no/*
   then: add-labels:phase/no
 - if: on:post-unlabeled:no/*
@@ -157,7 +162,10 @@
 
 # Solved: leave the rest to maintainers
 - if: on:post-labeled:phase/solved
-  then: remove-labels:phase/{new,no,open,yes}
+  then:
+    - remove-labels:phase/{new,no,open,yes}
+    - minimize-comments:pr-closed-maintainers
+    - forget-comments:pr-closed-maintainers
 
 # Message when no phase labels exist.
 - if: on:post-unlabeled:phase/*
