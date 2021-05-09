@@ -1711,7 +1711,8 @@ module.exports = {
   'open-needs-info': __nccwpck_require__(9931),
   'open-needs-repro': __nccwpck_require__(551),
   phaseless: __nccwpck_require__(4899),
-  'pr-closed-maintainers': __nccwpck_require__(4608),
+  'post-closed-issue-maintainers': __nccwpck_require__(5343),
+  'post-closed-pr-maintainers': __nccwpck_require__(3533),
   'yes-maintainers': __nccwpck_require__(9528)
 }
 
@@ -2136,6 +2137,54 @@ function renderPhaseless() {
       )
     ]),
     u('paragraph', [u('text', 'Thanks,\n— bb')])
+  ])
+}
+
+
+/***/ }),
+
+/***/ 5343:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = render
+
+var u = __nccwpck_require__(2637)
+
+function render() {
+  return u('root', [
+    u('paragraph', [
+      u(
+        'text',
+        'Hi! This was closed. Team: If this was fixed, please add the '
+      ),
+      u('inlineCode', 'phase/solved'),
+      u('text', ' label. Oterhwise, please add one of the '),
+      u('inlineCode', 'no/*'),
+      u('text', ' labels.')
+    ])
+  ])
+}
+
+
+/***/ }),
+
+/***/ 3533:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = render
+
+var u = __nccwpck_require__(2637)
+
+function render() {
+  return u('root', [
+    u('paragraph', [
+      u(
+        'text',
+        'Hi! This was closed. Team: If this was merged, please discuss when this should be released. Oterhwise, please add one of the '
+      ),
+      u('inlineCode', 'no/*'),
+      u('text', ' labels.')
+    ])
   ])
 }
 
@@ -26652,14 +26701,6 @@ function factory(key, options) {
 
   return one
 }
-
-
-/***/ }),
-
-/***/ 4608:
-/***/ ((module) => {
-
-module.exports = eval("require")("./pr-closed-maintainers");
 
 
 /***/ }),
