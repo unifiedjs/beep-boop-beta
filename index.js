@@ -2156,12 +2156,9 @@ var u = __nccwpck_require__(2637)
 function render() {
   return u('root', [
     u('paragraph', [
-      u(
-        'text',
-        'Hi! This was closed. Team: If this was fixed, please add the '
-      ),
+      u('text', 'Hi! This was closed. Team: If this was fixed, please add '),
       u('inlineCode', 'phase/solved'),
-      u('text', ' label. Oterhwise, please add one of the '),
+      u('text', '. Otherwise, please add one of the '),
       u('inlineCode', 'no/*'),
       u('text', ' labels.')
     ])
@@ -2183,7 +2180,7 @@ function render() {
     u('paragraph', [
       u(
         'text',
-        'Hi! This was closed. Team: If this was merged, please discuss when this should be released. Oterhwise, please add one of the '
+        'Hi! This was closed. Team: If this was merged, please describe when this is likely to be released. Otherhwise, please add one of the '
       ),
       u('inlineCode', 'no/*'),
       u('text', ' labels.')
