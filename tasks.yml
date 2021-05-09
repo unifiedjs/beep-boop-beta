@@ -3,12 +3,18 @@
   then: add-labels:phase/new
 - if: on:post-closed
   then:
-    - if: has-labels:phase/new
-      if-not: has-labels:no/*
-      then: add-labels:no/invalid
-    - if: has-labels:phase/open
-      if-not: has-labels:no/*
-      then: add-labels:no/invalid
+    - if: is:pr
+      then:
+        - comment:pr-closed-maintainers
+        - forget-comments:pr-closed-maintainers
+    - if: is:issue
+      then:
+        - if: has-labels:phase/new
+          if-not: has-labels:no/*
+          then: add-labels:no/invalid
+        - if: has-labels:phase/open
+          if-not: has-labels:no/*
+          then: add-labels:no/invalid
 - if: on:post-reopened
   then: remove-labels:phase/no
 

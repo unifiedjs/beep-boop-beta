@@ -884,8 +884,22 @@ async function hasLabels(ctx, event, expression) {
 module.exports = {
   'has-labels': __nccwpck_require__(3735),
   'marked-as-duplicate': __nccwpck_require__(3431),
+  is: __nccwpck_require__(3332),
   on: __nccwpck_require__(4309),
   'recent-comment': __nccwpck_require__(2432)
+}
+
+
+/***/ }),
+
+/***/ 3332:
+/***/ ((module) => {
+
+module.exports = is
+
+function is(ctx, event, type) {
+  var {post} = event
+  return post && post.type === type
 }
 
 
@@ -1681,6 +1695,7 @@ module.exports = {
   'open-needs-info': __nccwpck_require__(9931),
   'open-needs-repro': __nccwpck_require__(551),
   phaseless: __nccwpck_require__(4899),
+  'pr-closed-maintainers': __nccwpck_require__(9694),
   'yes-maintainers': __nccwpck_require__(9528)
 }
 
@@ -2111,6 +2126,29 @@ function renderPhaseless() {
 
 /***/ }),
 
+/***/ 9694:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+module.exports = render
+
+var u = __nccwpck_require__(2637)
+
+function render() {
+  return u('root', [
+    u('paragraph', [
+      u(
+        'text',
+        'Hi! This was closed. Team: If this was merged, please discuss when this should be released. Oterhwise, please add one of the '
+      ),
+      u('inlineCode', 'no/*'),
+      u('text', ' labels.')
+    ])
+  ])
+}
+
+
+/***/ }),
+
 /***/ 9528:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -2370,6 +2408,7 @@ exports.getInput = getInput;
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function setOutput(name, value) {
+    process.stdout.write(os.EOL);
     command_1.issueCommand('set-output', { name }, value);
 }
 exports.setOutput = setOutput;
@@ -3211,7 +3250,9 @@ class HttpClient {
                 maxSockets: maxSockets,
                 keepAlive: this._keepAlive,
                 proxy: {
-                    proxyAuth: `${proxyUrl.username}:${proxyUrl.password}`,
+                    ...((proxyUrl.username || proxyUrl.password) && {
+                        proxyAuth: `${proxyUrl.username}:${proxyUrl.password}`
+                    }),
                     host: proxyUrl.hostname,
                     port: proxyUrl.port
                 }
@@ -3493,7 +3534,7 @@ function _objectWithoutProperties(source, excluded) {
   return target;
 }
 
-const VERSION = "3.2.1";
+const VERSION = "3.4.0";
 
 class Octokit {
   constructor(options = {}) {
@@ -3502,6 +3543,7 @@ class Octokit {
       baseUrl: request.request.endpoint.DEFAULTS.baseUrl,
       headers: {},
       request: Object.assign({}, options.request, {
+        // @ts-ignore internal usage only, no need to type
         hook: hook.bind(null, "request")
       }),
       mediaType: {
@@ -3997,7 +4039,7 @@ function withDefaults(oldDefaults, newDefaults) {
   });
 }
 
-const VERSION = "6.0.9";
+const VERSION = "6.0.11";
 
 const userAgent = `octokit-endpoint.js/${VERSION} ${universalUserAgent.getUserAgent()}`; // DEFAULTS has all properties set that EndpointOptions has, except url.
 // So we use RequestParameters and add method as additional required property.
@@ -4034,7 +4076,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 var request = __nccwpck_require__(6234);
 var universalUserAgent = __nccwpck_require__(5030);
 
-const VERSION = "4.5.7";
+const VERSION = "4.6.1";
 
 class GraphqlError extends Error {
   constructor(request, response) {
@@ -4057,10 +4099,18 @@ class GraphqlError extends Error {
 }
 
 const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
+const FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
 const GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
 function graphql(request, query, options) {
-  if (typeof query === "string" && options && "query" in options) {
-    return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+  if (options) {
+    if (typeof query === "string" && "query" in options) {
+      return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+    }
+
+    for (const key in options) {
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
+      return Promise.reject(new Error(`[@octokit/graphql] "${key}" cannot be used as variable name`));
+    }
   }
 
   const parsedOptions = typeof query === "string" ? Object.assign({
@@ -4147,7 +4197,7 @@ exports.withCustomRequest = withCustomRequest;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
-const VERSION = "2.6.0";
+const VERSION = "2.13.3";
 
 /**
  * Some “list” response that can be paginated have a different response structure
@@ -4258,6 +4308,16 @@ const composePaginateRest = Object.assign(paginate, {
   iterator
 });
 
+const paginatingEndpoints = ["GET /app/installations", "GET /applications/grants", "GET /authorizations", "GET /enterprises/{enterprise}/actions/permissions/organizations", "GET /enterprises/{enterprise}/actions/runner-groups", "GET /enterprises/{enterprise}/actions/runner-groups/{runner_group_id}/organizations", "GET /enterprises/{enterprise}/actions/runner-groups/{runner_group_id}/runners", "GET /enterprises/{enterprise}/actions/runners", "GET /enterprises/{enterprise}/actions/runners/downloads", "GET /events", "GET /gists", "GET /gists/public", "GET /gists/starred", "GET /gists/{gist_id}/comments", "GET /gists/{gist_id}/commits", "GET /gists/{gist_id}/forks", "GET /installation/repositories", "GET /issues", "GET /marketplace_listing/plans", "GET /marketplace_listing/plans/{plan_id}/accounts", "GET /marketplace_listing/stubbed/plans", "GET /marketplace_listing/stubbed/plans/{plan_id}/accounts", "GET /networks/{owner}/{repo}/events", "GET /notifications", "GET /organizations", "GET /orgs/{org}/actions/permissions/repositories", "GET /orgs/{org}/actions/runner-groups", "GET /orgs/{org}/actions/runner-groups/{runner_group_id}/repositories", "GET /orgs/{org}/actions/runner-groups/{runner_group_id}/runners", "GET /orgs/{org}/actions/runners", "GET /orgs/{org}/actions/runners/downloads", "GET /orgs/{org}/actions/secrets", "GET /orgs/{org}/actions/secrets/{secret_name}/repositories", "GET /orgs/{org}/blocks", "GET /orgs/{org}/credential-authorizations", "GET /orgs/{org}/events", "GET /orgs/{org}/failed_invitations", "GET /orgs/{org}/hooks", "GET /orgs/{org}/installations", "GET /orgs/{org}/invitations", "GET /orgs/{org}/invitations/{invitation_id}/teams", "GET /orgs/{org}/issues", "GET /orgs/{org}/members", "GET /orgs/{org}/migrations", "GET /orgs/{org}/migrations/{migration_id}/repositories", "GET /orgs/{org}/outside_collaborators", "GET /orgs/{org}/projects", "GET /orgs/{org}/public_members", "GET /orgs/{org}/repos", "GET /orgs/{org}/team-sync/groups", "GET /orgs/{org}/teams", "GET /orgs/{org}/teams/{team_slug}/discussions", "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments", "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/comments/{comment_number}/reactions", "GET /orgs/{org}/teams/{team_slug}/discussions/{discussion_number}/reactions", "GET /orgs/{org}/teams/{team_slug}/invitations", "GET /orgs/{org}/teams/{team_slug}/members", "GET /orgs/{org}/teams/{team_slug}/projects", "GET /orgs/{org}/teams/{team_slug}/repos", "GET /orgs/{org}/teams/{team_slug}/team-sync/group-mappings", "GET /orgs/{org}/teams/{team_slug}/teams", "GET /projects/columns/{column_id}/cards", "GET /projects/{project_id}/collaborators", "GET /projects/{project_id}/columns", "GET /repos/{owner}/{repo}/actions/artifacts", "GET /repos/{owner}/{repo}/actions/runners", "GET /repos/{owner}/{repo}/actions/runners/downloads", "GET /repos/{owner}/{repo}/actions/runs", "GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts", "GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs", "GET /repos/{owner}/{repo}/actions/secrets", "GET /repos/{owner}/{repo}/actions/workflows", "GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs", "GET /repos/{owner}/{repo}/assignees", "GET /repos/{owner}/{repo}/branches", "GET /repos/{owner}/{repo}/check-runs/{check_run_id}/annotations", "GET /repos/{owner}/{repo}/check-suites/{check_suite_id}/check-runs", "GET /repos/{owner}/{repo}/code-scanning/alerts", "GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances", "GET /repos/{owner}/{repo}/code-scanning/analyses", "GET /repos/{owner}/{repo}/collaborators", "GET /repos/{owner}/{repo}/comments", "GET /repos/{owner}/{repo}/comments/{comment_id}/reactions", "GET /repos/{owner}/{repo}/commits", "GET /repos/{owner}/{repo}/commits/{commit_sha}/branches-where-head", "GET /repos/{owner}/{repo}/commits/{commit_sha}/comments", "GET /repos/{owner}/{repo}/commits/{commit_sha}/pulls", "GET /repos/{owner}/{repo}/commits/{ref}/check-runs", "GET /repos/{owner}/{repo}/commits/{ref}/check-suites", "GET /repos/{owner}/{repo}/commits/{ref}/statuses", "GET /repos/{owner}/{repo}/contributors", "GET /repos/{owner}/{repo}/deployments", "GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses", "GET /repos/{owner}/{repo}/events", "GET /repos/{owner}/{repo}/forks", "GET /repos/{owner}/{repo}/git/matching-refs/{ref}", "GET /repos/{owner}/{repo}/hooks", "GET /repos/{owner}/{repo}/invitations", "GET /repos/{owner}/{repo}/issues", "GET /repos/{owner}/{repo}/issues/comments", "GET /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions", "GET /repos/{owner}/{repo}/issues/events", "GET /repos/{owner}/{repo}/issues/{issue_number}/comments", "GET /repos/{owner}/{repo}/issues/{issue_number}/events", "GET /repos/{owner}/{repo}/issues/{issue_number}/labels", "GET /repos/{owner}/{repo}/issues/{issue_number}/reactions", "GET /repos/{owner}/{repo}/issues/{issue_number}/timeline", "GET /repos/{owner}/{repo}/keys", "GET /repos/{owner}/{repo}/labels", "GET /repos/{owner}/{repo}/milestones", "GET /repos/{owner}/{repo}/milestones/{milestone_number}/labels", "GET /repos/{owner}/{repo}/notifications", "GET /repos/{owner}/{repo}/pages/builds", "GET /repos/{owner}/{repo}/projects", "GET /repos/{owner}/{repo}/pulls", "GET /repos/{owner}/{repo}/pulls/comments", "GET /repos/{owner}/{repo}/pulls/comments/{comment_id}/reactions", "GET /repos/{owner}/{repo}/pulls/{pull_number}/comments", "GET /repos/{owner}/{repo}/pulls/{pull_number}/commits", "GET /repos/{owner}/{repo}/pulls/{pull_number}/files", "GET /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers", "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews", "GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/comments", "GET /repos/{owner}/{repo}/releases", "GET /repos/{owner}/{repo}/releases/{release_id}/assets", "GET /repos/{owner}/{repo}/secret-scanning/alerts", "GET /repos/{owner}/{repo}/stargazers", "GET /repos/{owner}/{repo}/subscribers", "GET /repos/{owner}/{repo}/tags", "GET /repos/{owner}/{repo}/teams", "GET /repositories", "GET /repositories/{repository_id}/environments/{environment_name}/secrets", "GET /scim/v2/enterprises/{enterprise}/Groups", "GET /scim/v2/enterprises/{enterprise}/Users", "GET /scim/v2/organizations/{org}/Users", "GET /search/code", "GET /search/commits", "GET /search/issues", "GET /search/labels", "GET /search/repositories", "GET /search/topics", "GET /search/users", "GET /teams/{team_id}/discussions", "GET /teams/{team_id}/discussions/{discussion_number}/comments", "GET /teams/{team_id}/discussions/{discussion_number}/comments/{comment_number}/reactions", "GET /teams/{team_id}/discussions/{discussion_number}/reactions", "GET /teams/{team_id}/invitations", "GET /teams/{team_id}/members", "GET /teams/{team_id}/projects", "GET /teams/{team_id}/repos", "GET /teams/{team_id}/team-sync/group-mappings", "GET /teams/{team_id}/teams", "GET /user/blocks", "GET /user/emails", "GET /user/followers", "GET /user/following", "GET /user/gpg_keys", "GET /user/installations", "GET /user/installations/{installation_id}/repositories", "GET /user/issues", "GET /user/keys", "GET /user/marketplace_purchases", "GET /user/marketplace_purchases/stubbed", "GET /user/memberships/orgs", "GET /user/migrations", "GET /user/migrations/{migration_id}/repositories", "GET /user/orgs", "GET /user/public_emails", "GET /user/repos", "GET /user/repository_invitations", "GET /user/starred", "GET /user/subscriptions", "GET /user/teams", "GET /users", "GET /users/{username}/events", "GET /users/{username}/events/orgs/{org}", "GET /users/{username}/events/public", "GET /users/{username}/followers", "GET /users/{username}/following", "GET /users/{username}/gists", "GET /users/{username}/gpg_keys", "GET /users/{username}/keys", "GET /users/{username}/orgs", "GET /users/{username}/projects", "GET /users/{username}/received_events", "GET /users/{username}/received_events/public", "GET /users/{username}/repos", "GET /users/{username}/starred", "GET /users/{username}/subscriptions"];
+
+function isPaginatingEndpoint(arg) {
+  if (typeof arg === "string") {
+    return paginatingEndpoints.includes(arg);
+  } else {
+    return false;
+  }
+}
+
 /**
  * @param octokit Octokit instance
  * @param options Options passed to Octokit constructor
@@ -4273,7 +4333,9 @@ function paginateRest(octokit) {
 paginateRest.VERSION = VERSION;
 
 exports.composePaginateRest = composePaginateRest;
+exports.isPaginatingEndpoint = isPaginatingEndpoint;
 exports.paginateRest = paginateRest;
+exports.paginatingEndpoints = paginatingEndpoints;
 //# sourceMappingURL=index.js.map
 
 
@@ -4287,10 +4349,60 @@ exports.paginateRest = paginateRest;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+}
+
+function ownKeys(object, enumerableOnly) {
+  var keys = Object.keys(object);
+
+  if (Object.getOwnPropertySymbols) {
+    var symbols = Object.getOwnPropertySymbols(object);
+    if (enumerableOnly) symbols = symbols.filter(function (sym) {
+      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+    });
+    keys.push.apply(keys, symbols);
+  }
+
+  return keys;
+}
+
+function _objectSpread2(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+
+    if (i % 2) {
+      ownKeys(Object(source), true).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      });
+    } else if (Object.getOwnPropertyDescriptors) {
+      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+      ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+  }
+
+  return target;
+}
+
 const Endpoints = {
   actions: {
     addSelectedRepoToOrgSecret: ["PUT /orgs/{org}/actions/secrets/{secret_name}/repositories/{repository_id}"],
     cancelWorkflowRun: ["POST /repos/{owner}/{repo}/actions/runs/{run_id}/cancel"],
+    createOrUpdateEnvironmentSecret: ["PUT /repositories/{repository_id}/environments/{environment_name}/secrets/{secret_name}"],
     createOrUpdateOrgSecret: ["PUT /orgs/{org}/actions/secrets/{secret_name}"],
     createOrUpdateRepoSecret: ["PUT /repos/{owner}/{repo}/actions/secrets/{secret_name}"],
     createRegistrationTokenForOrg: ["POST /orgs/{org}/actions/runners/registration-token"],
@@ -4299,21 +4411,37 @@ const Endpoints = {
     createRemoveTokenForRepo: ["POST /repos/{owner}/{repo}/actions/runners/remove-token"],
     createWorkflowDispatch: ["POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches"],
     deleteArtifact: ["DELETE /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
+    deleteEnvironmentSecret: ["DELETE /repositories/{repository_id}/environments/{environment_name}/secrets/{secret_name}"],
     deleteOrgSecret: ["DELETE /orgs/{org}/actions/secrets/{secret_name}"],
     deleteRepoSecret: ["DELETE /repos/{owner}/{repo}/actions/secrets/{secret_name}"],
     deleteSelfHostedRunnerFromOrg: ["DELETE /orgs/{org}/actions/runners/{runner_id}"],
     deleteSelfHostedRunnerFromRepo: ["DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}"],
     deleteWorkflowRun: ["DELETE /repos/{owner}/{repo}/actions/runs/{run_id}"],
     deleteWorkflowRunLogs: ["DELETE /repos/{owner}/{repo}/actions/runs/{run_id}/logs"],
+    disableSelectedRepositoryGithubActionsOrganization: ["DELETE /orgs/{org}/actions/permissions/repositories/{repository_id}"],
+    disableWorkflow: ["PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable"],
     downloadArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}/{archive_format}"],
     downloadJobLogsForWorkflowRun: ["GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs"],
     downloadWorkflowRunLogs: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}/logs"],
+    enableSelectedRepositoryGithubActionsOrganization: ["PUT /orgs/{org}/actions/permissions/repositories/{repository_id}"],
+    enableWorkflow: ["PUT /repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable"],
+    getAllowedActionsOrganization: ["GET /orgs/{org}/actions/permissions/selected-actions"],
+    getAllowedActionsRepository: ["GET /repos/{owner}/{repo}/actions/permissions/selected-actions"],
     getArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
+    getEnvironmentPublicKey: ["GET /repositories/{repository_id}/environments/{environment_name}/secrets/public-key"],
+    getEnvironmentSecret: ["GET /repositories/{repository_id}/environments/{environment_name}/secrets/{secret_name}"],
+    getGithubActionsPermissionsOrganization: ["GET /orgs/{org}/actions/permissions"],
+    getGithubActionsPermissionsRepository: ["GET /repos/{owner}/{repo}/actions/permissions"],
     getJobForWorkflowRun: ["GET /repos/{owner}/{repo}/actions/jobs/{job_id}"],
     getOrgPublicKey: ["GET /orgs/{org}/actions/secrets/public-key"],
     getOrgSecret: ["GET /orgs/{org}/actions/secrets/{secret_name}"],
+    getPendingDeploymentsForRun: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments"],
+    getRepoPermissions: ["GET /repos/{owner}/{repo}/actions/permissions", {}, {
+      renamed: ["actions", "getGithubActionsPermissionsRepository"]
+    }],
     getRepoPublicKey: ["GET /repos/{owner}/{repo}/actions/secrets/public-key"],
     getRepoSecret: ["GET /repos/{owner}/{repo}/actions/secrets/{secret_name}"],
+    getReviewsForRun: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}/approvals"],
     getSelfHostedRunnerForOrg: ["GET /orgs/{org}/actions/runners/{runner_id}"],
     getSelfHostedRunnerForRepo: ["GET /repos/{owner}/{repo}/actions/runners/{runner_id}"],
     getWorkflow: ["GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}"],
@@ -4321,6 +4449,7 @@ const Endpoints = {
     getWorkflowRunUsage: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}/timing"],
     getWorkflowUsage: ["GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/timing"],
     listArtifactsForRepo: ["GET /repos/{owner}/{repo}/actions/artifacts"],
+    listEnvironmentSecrets: ["GET /repositories/{repository_id}/environments/{environment_name}/secrets"],
     listJobsForWorkflowRun: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs"],
     listOrgSecrets: ["GET /orgs/{org}/actions/secrets"],
     listRepoSecrets: ["GET /repos/{owner}/{repo}/actions/secrets"],
@@ -4328,6 +4457,7 @@ const Endpoints = {
     listRunnerApplicationsForOrg: ["GET /orgs/{org}/actions/runners/downloads"],
     listRunnerApplicationsForRepo: ["GET /repos/{owner}/{repo}/actions/runners/downloads"],
     listSelectedReposForOrgSecret: ["GET /orgs/{org}/actions/secrets/{secret_name}/repositories"],
+    listSelectedRepositoriesEnabledGithubActionsOrganization: ["GET /orgs/{org}/actions/permissions/repositories"],
     listSelfHostedRunnersForOrg: ["GET /orgs/{org}/actions/runners"],
     listSelfHostedRunnersForRepo: ["GET /repos/{owner}/{repo}/actions/runners"],
     listWorkflowRunArtifacts: ["GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"],
@@ -4335,7 +4465,13 @@ const Endpoints = {
     listWorkflowRunsForRepo: ["GET /repos/{owner}/{repo}/actions/runs"],
     reRunWorkflow: ["POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun"],
     removeSelectedRepoFromOrgSecret: ["DELETE /orgs/{org}/actions/secrets/{secret_name}/repositories/{repository_id}"],
-    setSelectedReposForOrgSecret: ["PUT /orgs/{org}/actions/secrets/{secret_name}/repositories"]
+    reviewPendingDeploymentsForRun: ["POST /repos/{owner}/{repo}/actions/runs/{run_id}/pending_deployments"],
+    setAllowedActionsOrganization: ["PUT /orgs/{org}/actions/permissions/selected-actions"],
+    setAllowedActionsRepository: ["PUT /repos/{owner}/{repo}/actions/permissions/selected-actions"],
+    setGithubActionsPermissionsOrganization: ["PUT /orgs/{org}/actions/permissions"],
+    setGithubActionsPermissionsRepository: ["PUT /repos/{owner}/{repo}/actions/permissions"],
+    setSelectedReposForOrgSecret: ["PUT /orgs/{org}/actions/secrets/{secret_name}/repositories"],
+    setSelectedRepositoriesEnabledGithubActionsOrganization: ["PUT /orgs/{org}/actions/permissions/repositories"]
   },
   activity: {
     checkRepoIsStarredByAuthenticatedUser: ["GET /user/starred/{owner}/{repo}"],
@@ -4391,6 +4527,7 @@ const Endpoints = {
     getSubscriptionPlanForAccount: ["GET /marketplace_listing/accounts/{account_id}"],
     getSubscriptionPlanForAccountStubbed: ["GET /marketplace_listing/stubbed/accounts/{account_id}"],
     getUserInstallation: ["GET /users/{username}/installation"],
+    getWebhookConfigForApp: ["GET /app/hook/config"],
     listAccountsForPlan: ["GET /marketplace_listing/plans/{plan_id}/accounts"],
     listAccountsForPlanStubbed: ["GET /marketplace_listing/stubbed/plans/{plan_id}/accounts"],
     listInstallationReposForAuthenticatedUser: ["GET /user/installations/{installation_id}/repositories"],
@@ -4404,8 +4541,10 @@ const Endpoints = {
     removeRepoFromInstallation: ["DELETE /user/installations/{installation_id}/repositories/{repository_id}"],
     resetToken: ["PATCH /applications/{client_id}/token"],
     revokeInstallationAccessToken: ["DELETE /installation/token"],
+    scopeToken: ["POST /applications/{client_id}/token/scoped"],
     suspendInstallation: ["PUT /app/installations/{installation_id}/suspended"],
-    unsuspendInstallation: ["DELETE /app/installations/{installation_id}/suspended"]
+    unsuspendInstallation: ["DELETE /app/installations/{installation_id}/suspended"],
+    updateWebhookConfigForApp: ["PATCH /app/hook/config"]
   },
   billing: {
     getGithubActionsBillingOrg: ["GET /orgs/{org}/settings/billing/actions"],
@@ -4416,69 +4555,29 @@ const Endpoints = {
     getSharedStorageBillingUser: ["GET /users/{username}/settings/billing/shared-storage"]
   },
   checks: {
-    create: ["POST /repos/{owner}/{repo}/check-runs", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    createSuite: ["POST /repos/{owner}/{repo}/check-suites", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    get: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    getSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    listAnnotations: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}/annotations", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    listForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-runs", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    listForSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}/check-runs", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    listSuitesForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-suites", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    rerequestSuite: ["POST /repos/{owner}/{repo}/check-suites/{check_suite_id}/rerequest", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    setSuitesPreferences: ["PATCH /repos/{owner}/{repo}/check-suites/preferences", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }],
-    update: ["PATCH /repos/{owner}/{repo}/check-runs/{check_run_id}", {
-      mediaType: {
-        previews: ["antiope"]
-      }
-    }]
+    create: ["POST /repos/{owner}/{repo}/check-runs"],
+    createSuite: ["POST /repos/{owner}/{repo}/check-suites"],
+    get: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}"],
+    getSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}"],
+    listAnnotations: ["GET /repos/{owner}/{repo}/check-runs/{check_run_id}/annotations"],
+    listForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-runs"],
+    listForSuite: ["GET /repos/{owner}/{repo}/check-suites/{check_suite_id}/check-runs"],
+    listSuitesForRef: ["GET /repos/{owner}/{repo}/commits/{ref}/check-suites"],
+    rerequestSuite: ["POST /repos/{owner}/{repo}/check-suites/{check_suite_id}/rerequest"],
+    setSuitesPreferences: ["PATCH /repos/{owner}/{repo}/check-suites/preferences"],
+    update: ["PATCH /repos/{owner}/{repo}/check-runs/{check_run_id}"]
   },
   codeScanning: {
+    deleteAnalysis: ["DELETE /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}{?confirm_delete}"],
     getAlert: ["GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}", {}, {
       renamedParameters: {
         alert_id: "alert_number"
       }
     }],
+    getAnalysis: ["GET /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}"],
+    getSarif: ["GET /repos/{owner}/{repo}/code-scanning/sarifs/{sarif_id}"],
     listAlertsForRepo: ["GET /repos/{owner}/{repo}/code-scanning/alerts"],
+    listAlertsInstances: ["GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances"],
     listRecentAnalyses: ["GET /repos/{owner}/{repo}/code-scanning/analyses"],
     updateAlert: ["PATCH /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}"],
     uploadSarif: ["POST /repos/{owner}/{repo}/code-scanning/sarifs"]
@@ -4502,6 +4601,16 @@ const Endpoints = {
   },
   emojis: {
     get: ["GET /emojis"]
+  },
+  enterpriseAdmin: {
+    disableSelectedOrganizationGithubActionsEnterprise: ["DELETE /enterprises/{enterprise}/actions/permissions/organizations/{org_id}"],
+    enableSelectedOrganizationGithubActionsEnterprise: ["PUT /enterprises/{enterprise}/actions/permissions/organizations/{org_id}"],
+    getAllowedActionsEnterprise: ["GET /enterprises/{enterprise}/actions/permissions/selected-actions"],
+    getGithubActionsPermissionsEnterprise: ["GET /enterprises/{enterprise}/actions/permissions"],
+    listSelectedOrganizationsEnabledGithubActionsEnterprise: ["GET /enterprises/{enterprise}/actions/permissions/organizations"],
+    setAllowedActionsEnterprise: ["PUT /enterprises/{enterprise}/actions/permissions/selected-actions"],
+    setGithubActionsPermissionsEnterprise: ["PUT /enterprises/{enterprise}/actions/permissions"],
+    setSelectedOrganizationsEnabledGithubActionsEnterprise: ["PUT /enterprises/{enterprise}/actions/permissions/organizations"]
   },
   gists: {
     checkIsStarred: ["GET /gists/{gist_id}/star"],
@@ -4545,35 +4654,23 @@ const Endpoints = {
     getTemplate: ["GET /gitignore/templates/{name}"]
   },
   interactions: {
-    getRestrictionsForOrg: ["GET /orgs/{org}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
+    getRestrictionsForAuthenticatedUser: ["GET /user/interaction-limits"],
+    getRestrictionsForOrg: ["GET /orgs/{org}/interaction-limits"],
+    getRestrictionsForRepo: ["GET /repos/{owner}/{repo}/interaction-limits"],
+    getRestrictionsForYourPublicRepos: ["GET /user/interaction-limits", {}, {
+      renamed: ["interactions", "getRestrictionsForAuthenticatedUser"]
     }],
-    getRestrictionsForRepo: ["GET /repos/{owner}/{repo}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
+    removeRestrictionsForAuthenticatedUser: ["DELETE /user/interaction-limits"],
+    removeRestrictionsForOrg: ["DELETE /orgs/{org}/interaction-limits"],
+    removeRestrictionsForRepo: ["DELETE /repos/{owner}/{repo}/interaction-limits"],
+    removeRestrictionsForYourPublicRepos: ["DELETE /user/interaction-limits", {}, {
+      renamed: ["interactions", "removeRestrictionsForAuthenticatedUser"]
     }],
-    removeRestrictionsForOrg: ["DELETE /orgs/{org}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
-    }],
-    removeRestrictionsForRepo: ["DELETE /repos/{owner}/{repo}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
-    }],
-    setRestrictionsForOrg: ["PUT /orgs/{org}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
-    }],
-    setRestrictionsForRepo: ["PUT /repos/{owner}/{repo}/interaction-limits", {
-      mediaType: {
-        previews: ["sombra"]
-      }
+    setRestrictionsForAuthenticatedUser: ["PUT /user/interaction-limits"],
+    setRestrictionsForOrg: ["PUT /orgs/{org}/interaction-limits"],
+    setRestrictionsForRepo: ["PUT /repos/{owner}/{repo}/interaction-limits"],
+    setRestrictionsForYourPublicRepos: ["PUT /user/interaction-limits", {}, {
+      renamed: ["interactions", "setRestrictionsForAuthenticatedUser"]
     }]
   },
   issues: {
@@ -4635,7 +4732,10 @@ const Endpoints = {
     }]
   },
   meta: {
-    get: ["GET /meta"]
+    get: ["GET /meta"],
+    getOctocat: ["GET /octocat"],
+    getZen: ["GET /zen"],
+    root: ["GET /"]
   },
   migrations: {
     cancelImport: ["DELETE /repos/{owner}/{repo}/import"],
@@ -4711,6 +4811,7 @@ const Endpoints = {
   },
   orgs: {
     blockUser: ["PUT /orgs/{org}/blocks/{username}"],
+    cancelInvitation: ["DELETE /orgs/{org}/invitations/{invitation_id}"],
     checkBlockedUser: ["GET /orgs/{org}/blocks/{username}"],
     checkMembershipForUser: ["GET /orgs/{org}/members/{username}"],
     checkPublicMembershipForUser: ["GET /orgs/{org}/public_members/{username}"],
@@ -4722,9 +4823,11 @@ const Endpoints = {
     getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
+    getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
     list: ["GET /organizations"],
     listAppInstallations: ["GET /orgs/{org}/installations"],
     listBlockedUsers: ["GET /orgs/{org}/blocks"],
+    listFailedInvitations: ["GET /orgs/{org}/failed_invitations"],
     listForAuthenticatedUser: ["GET /user/orgs"],
     listForUser: ["GET /users/{username}/orgs"],
     listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
@@ -4744,7 +4847,33 @@ const Endpoints = {
     unblockUser: ["DELETE /orgs/{org}/blocks/{username}"],
     update: ["PATCH /orgs/{org}"],
     updateMembershipForAuthenticatedUser: ["PATCH /user/memberships/orgs/{org}"],
-    updateWebhook: ["PATCH /orgs/{org}/hooks/{hook_id}"]
+    updateWebhook: ["PATCH /orgs/{org}/hooks/{hook_id}"],
+    updateWebhookConfigForOrg: ["PATCH /orgs/{org}/hooks/{hook_id}/config"]
+  },
+  packages: {
+    deletePackageForAuthenticatedUser: ["DELETE /user/packages/{package_type}/{package_name}"],
+    deletePackageForOrg: ["DELETE /orgs/{org}/packages/{package_type}/{package_name}"],
+    deletePackageVersionForAuthenticatedUser: ["DELETE /user/packages/{package_type}/{package_name}/versions/{package_version_id}"],
+    deletePackageVersionForOrg: ["DELETE /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}"],
+    getAllPackageVersionsForAPackageOwnedByAnOrg: ["GET /orgs/{org}/packages/{package_type}/{package_name}/versions", {}, {
+      renamed: ["packages", "getAllPackageVersionsForPackageOwnedByOrg"]
+    }],
+    getAllPackageVersionsForAPackageOwnedByTheAuthenticatedUser: ["GET /user/packages/{package_type}/{package_name}/versions", {}, {
+      renamed: ["packages", "getAllPackageVersionsForPackageOwnedByAuthenticatedUser"]
+    }],
+    getAllPackageVersionsForPackageOwnedByAuthenticatedUser: ["GET /user/packages/{package_type}/{package_name}/versions"],
+    getAllPackageVersionsForPackageOwnedByOrg: ["GET /orgs/{org}/packages/{package_type}/{package_name}/versions"],
+    getAllPackageVersionsForPackageOwnedByUser: ["GET /users/{username}/packages/{package_type}/{package_name}/versions"],
+    getPackageForAuthenticatedUser: ["GET /user/packages/{package_type}/{package_name}"],
+    getPackageForOrganization: ["GET /orgs/{org}/packages/{package_type}/{package_name}"],
+    getPackageForUser: ["GET /users/{username}/packages/{package_type}/{package_name}"],
+    getPackageVersionForAuthenticatedUser: ["GET /user/packages/{package_type}/{package_name}/versions/{package_version_id}"],
+    getPackageVersionForOrganization: ["GET /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}"],
+    getPackageVersionForUser: ["GET /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}"],
+    restorePackageForAuthenticatedUser: ["POST /user/packages/{package_type}/{package_name}/restore{?token}"],
+    restorePackageForOrg: ["POST /orgs/{org}/packages/{package_type}/{package_name}/restore{?token}"],
+    restorePackageVersionForAuthenticatedUser: ["POST /user/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"],
+    restorePackageVersionForOrg: ["POST /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"]
   },
   projects: {
     addCollaborator: ["PUT /projects/{project_id}/collaborators/{username}", {
@@ -4975,7 +5104,7 @@ const Endpoints = {
         previews: ["squirrel-girl"]
       }
     }, {
-      deprecated: "octokit.reactions.deleteLegacy() is deprecated, see https://developer.github.com/v3/reactions/#delete-a-reaction-legacy"
+      deprecated: "octokit.rest.reactions.deleteLegacy() is deprecated, see https://docs.github.com/rest/reference/reactions/#delete-a-reaction-legacy"
     }],
     listForCommitComment: ["GET /repos/{owner}/{repo}/comments/{comment_id}/reactions", {
       mediaType: {
@@ -5044,6 +5173,7 @@ const Endpoints = {
     createForAuthenticatedUser: ["POST /user/repos"],
     createFork: ["POST /repos/{owner}/{repo}/forks"],
     createInOrg: ["POST /orgs/{org}/repos"],
+    createOrUpdateEnvironment: ["PUT /repos/{owner}/{repo}/environments/{environment_name}"],
     createOrUpdateFileContents: ["PUT /repos/{owner}/{repo}/contents/{path}"],
     createPagesSite: ["POST /repos/{owner}/{repo}/pages", {
       mediaType: {
@@ -5061,6 +5191,7 @@ const Endpoints = {
     delete: ["DELETE /repos/{owner}/{repo}"],
     deleteAccessRestrictions: ["DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions"],
     deleteAdminBranchProtection: ["DELETE /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"],
+    deleteAnEnvironment: ["DELETE /repos/{owner}/{repo}/environments/{environment_name}"],
     deleteBranchProtection: ["DELETE /repos/{owner}/{repo}/branches/{branch}/protection"],
     deleteCommitComment: ["DELETE /repos/{owner}/{repo}/comments/{comment_id}"],
     deleteCommitSignatureProtection: ["DELETE /repos/{owner}/{repo}/branches/{branch}/protection/required_signatures", {
@@ -5091,7 +5222,11 @@ const Endpoints = {
         previews: ["dorian"]
       }
     }],
-    downloadArchive: ["GET /repos/{owner}/{repo}/{archive_format}/{ref}"],
+    downloadArchive: ["GET /repos/{owner}/{repo}/zipball/{ref}", {}, {
+      renamed: ["repos", "downloadZipballArchive"]
+    }],
+    downloadTarballArchive: ["GET /repos/{owner}/{repo}/tarball/{ref}"],
+    downloadZipballArchive: ["GET /repos/{owner}/{repo}/zipball/{ref}"],
     enableAutomatedSecurityFixes: ["PUT /repos/{owner}/{repo}/automated-security-fixes", {
       mediaType: {
         previews: ["london"]
@@ -5105,6 +5240,7 @@ const Endpoints = {
     get: ["GET /repos/{owner}/{repo}"],
     getAccessRestrictions: ["GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions"],
     getAdminBranchProtection: ["GET /repos/{owner}/{repo}/branches/{branch}/protection/enforce_admins"],
+    getAllEnvironments: ["GET /repos/{owner}/{repo}/environments"],
     getAllStatusCheckContexts: ["GET /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks/contexts"],
     getAllTopics: ["GET /repos/{owner}/{repo}/topics", {
       mediaType: {
@@ -5126,16 +5262,13 @@ const Endpoints = {
         previews: ["zzzax"]
       }
     }],
-    getCommunityProfileMetrics: ["GET /repos/{owner}/{repo}/community/profile", {
-      mediaType: {
-        previews: ["black-panther"]
-      }
-    }],
+    getCommunityProfileMetrics: ["GET /repos/{owner}/{repo}/community/profile"],
     getContent: ["GET /repos/{owner}/{repo}/contents/{path}"],
     getContributorsStats: ["GET /repos/{owner}/{repo}/stats/contributors"],
     getDeployKey: ["GET /repos/{owner}/{repo}/keys/{key_id}"],
     getDeployment: ["GET /repos/{owner}/{repo}/deployments/{deployment_id}"],
     getDeploymentStatus: ["GET /repos/{owner}/{repo}/deployments/{deployment_id}/statuses/{status_id}"],
+    getEnvironment: ["GET /repos/{owner}/{repo}/environments/{environment_name}"],
     getLatestPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/latest"],
     getLatestRelease: ["GET /repos/{owner}/{repo}/releases/latest"],
     getPages: ["GET /repos/{owner}/{repo}/pages"],
@@ -5144,6 +5277,7 @@ const Endpoints = {
     getPullRequestReviewProtection: ["GET /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"],
     getPunchCardStats: ["GET /repos/{owner}/{repo}/stats/punch_card"],
     getReadme: ["GET /repos/{owner}/{repo}/readme"],
+    getReadmeInDirectory: ["GET /repos/{owner}/{repo}/readme/{dir}"],
     getRelease: ["GET /repos/{owner}/{repo}/releases/{release_id}"],
     getReleaseAsset: ["GET /repos/{owner}/{repo}/releases/assets/{asset_id}"],
     getReleaseByTag: ["GET /repos/{owner}/{repo}/releases/tags/{tag}"],
@@ -5154,6 +5288,7 @@ const Endpoints = {
     getUsersWithAccessToProtectedBranch: ["GET /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users"],
     getViews: ["GET /repos/{owner}/{repo}/traffic/views"],
     getWebhook: ["GET /repos/{owner}/{repo}/hooks/{hook_id}"],
+    getWebhookConfigForRepo: ["GET /repos/{owner}/{repo}/hooks/{hook_id}/config"],
     listBranches: ["GET /repos/{owner}/{repo}/branches"],
     listBranchesForHeadCommit: ["GET /repos/{owner}/{repo}/commits/{commit_sha}/branches-where-head", {
       mediaType: {
@@ -5204,6 +5339,7 @@ const Endpoints = {
     removeUserAccessRestrictions: ["DELETE /repos/{owner}/{repo}/branches/{branch}/protection/restrictions/users", {}, {
       mapToData: "users"
     }],
+    renameBranch: ["POST /repos/{owner}/{repo}/branches/{branch}/rename"],
     replaceAllTopics: ["PUT /repos/{owner}/{repo}/topics", {
       mediaType: {
         previews: ["mercy"]
@@ -5233,8 +5369,12 @@ const Endpoints = {
     updatePullRequestReviewProtection: ["PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"],
     updateRelease: ["PATCH /repos/{owner}/{repo}/releases/{release_id}"],
     updateReleaseAsset: ["PATCH /repos/{owner}/{repo}/releases/assets/{asset_id}"],
-    updateStatusCheckPotection: ["PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"],
+    updateStatusCheckPotection: ["PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks", {}, {
+      renamed: ["repos", "updateStatusCheckProtection"]
+    }],
+    updateStatusCheckProtection: ["PATCH /repos/{owner}/{repo}/branches/{branch}/protection/required_status_checks"],
     updateWebhook: ["PATCH /repos/{owner}/{repo}/hooks/{hook_id}"],
+    updateWebhookConfigForRepo: ["PATCH /repos/{owner}/{repo}/hooks/{hook_id}/config"],
     uploadReleaseAsset: ["POST /repos/{owner}/{repo}/releases/{release_id}/assets{?name,label}", {
       baseUrl: "https://uploads.github.com"
     }]
@@ -5255,6 +5395,11 @@ const Endpoints = {
       }
     }],
     users: ["GET /search/users"]
+  },
+  secretScanning: {
+    getAlert: ["GET /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"],
+    listAlertsForRepo: ["GET /repos/{owner}/{repo}/secret-scanning/alerts"],
+    updateAlert: ["PATCH /repos/{owner}/{repo}/secret-scanning/alerts/{alert_number}"]
   },
   teams: {
     addOrUpdateMembershipForUserInOrg: ["PUT /orgs/{org}/teams/{team_slug}/memberships/{username}"],
@@ -5336,7 +5481,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "4.2.1";
+const VERSION = "4.15.1";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -5419,19 +5564,11 @@ function decorate(octokit, scope, methodName, defaults, decorations) {
   return Object.assign(withDecorations, requestWithDefaults);
 }
 
-/**
- * This plugin is a 1:1 copy of internal @octokit/rest plugins. The primary
- * goal is to rebuild @octokit/rest on top of @octokit/core. Once that is
- * done, we will remove the registerEndpoints methods and return the methods
- * directly as with the other plugins. At that point we will also remove the
- * legacy workarounds and deprecations.
- *
- * See the plan at
- * https://github.com/octokit/plugin-rest-endpoint-methods.js/pull/1
- */
-
 function restEndpointMethods(octokit) {
-  return endpointsToMethods(octokit, Endpoints);
+  const api = endpointsToMethods(octokit, Endpoints);
+  return _objectSpread2(_objectSpread2({}, api), {}, {
+    rest: api
+  });
 }
 restEndpointMethods.VERSION = VERSION;
 
@@ -5520,7 +5657,7 @@ var isPlainObject = __nccwpck_require__(3287);
 var nodeFetch = _interopDefault(__nccwpck_require__(467));
 var requestError = __nccwpck_require__(537);
 
-const VERSION = "5.4.10";
+const VERSION = "5.4.15";
 
 function getBufferResponse(response) {
   return response.arrayBuffer();
@@ -5540,7 +5677,9 @@ function fetchWrapper(requestOptions) {
     body: requestOptions.body,
     headers: requestOptions.headers,
     redirect: requestOptions.redirect
-  }, requestOptions.request)).then(response => {
+  }, // `requestOptions.request.agent` type is incompatible
+  // see https://github.com/octokit/types.ts/pull/264
+  requestOptions.request)).then(response => {
     url = response.url;
     status = response.status;
 
@@ -5711,6 +5850,9 @@ function range(a, b, str) {
   var i = ai;
 
   if (ai >= 0 && bi > 0) {
+    if(a===b) {
+      return [ai, bi];
+    }
     begs = [];
     left = str.length;
 
@@ -5811,51 +5953,51 @@ module.exports.Collection = Hook.Collection
 /***/ 5549:
 /***/ ((module) => {
 
-module.exports = addHook
+module.exports = addHook;
 
-function addHook (state, kind, name, hook) {
-  var orig = hook
+function addHook(state, kind, name, hook) {
+  var orig = hook;
   if (!state.registry[name]) {
-    state.registry[name] = []
+    state.registry[name] = [];
   }
 
-  if (kind === 'before') {
+  if (kind === "before") {
     hook = function (method, options) {
       return Promise.resolve()
         .then(orig.bind(null, options))
-        .then(method.bind(null, options))
-    }
+        .then(method.bind(null, options));
+    };
   }
 
-  if (kind === 'after') {
+  if (kind === "after") {
     hook = function (method, options) {
-      var result
+      var result;
       return Promise.resolve()
         .then(method.bind(null, options))
         .then(function (result_) {
-          result = result_
-          return orig(result, options)
+          result = result_;
+          return orig(result, options);
         })
         .then(function () {
-          return result
-        })
-    }
+          return result;
+        });
+    };
   }
 
-  if (kind === 'error') {
+  if (kind === "error") {
     hook = function (method, options) {
       return Promise.resolve()
         .then(method.bind(null, options))
         .catch(function (error) {
-          return orig(error, options)
-        })
-    }
+          return orig(error, options);
+        });
+    };
   }
 
   state.registry[name].push({
     hook: hook,
-    orig: orig
-  })
+    orig: orig,
+  });
 }
 
 
@@ -5864,33 +6006,32 @@ function addHook (state, kind, name, hook) {
 /***/ 4670:
 /***/ ((module) => {
 
-module.exports = register
+module.exports = register;
 
-function register (state, name, method, options) {
-  if (typeof method !== 'function') {
-    throw new Error('method for before hook must be a function')
+function register(state, name, method, options) {
+  if (typeof method !== "function") {
+    throw new Error("method for before hook must be a function");
   }
 
   if (!options) {
-    options = {}
+    options = {};
   }
 
   if (Array.isArray(name)) {
     return name.reverse().reduce(function (callback, name) {
-      return register.bind(null, state, name, callback, options)
-    }, method)()
+      return register.bind(null, state, name, callback, options);
+    }, method)();
   }
 
-  return Promise.resolve()
-    .then(function () {
-      if (!state.registry[name]) {
-        return method(options)
-      }
+  return Promise.resolve().then(function () {
+    if (!state.registry[name]) {
+      return method(options);
+    }
 
-      return (state.registry[name]).reduce(function (method, registered) {
-        return registered.hook.bind(null, method, options)
-      }, method)()
-    })
+    return state.registry[name].reduce(function (method, registered) {
+      return registered.hook.bind(null, method, options);
+    }, method)();
+  });
 }
 
 
@@ -5899,22 +6040,24 @@ function register (state, name, method, options) {
 /***/ 6819:
 /***/ ((module) => {
 
-module.exports = removeHook
+module.exports = removeHook;
 
-function removeHook (state, name, method) {
+function removeHook(state, name, method) {
   if (!state.registry[name]) {
-    return
+    return;
   }
 
   var index = state.registry[name]
-    .map(function (registered) { return registered.orig })
-    .indexOf(method)
+    .map(function (registered) {
+      return registered.orig;
+    })
+    .indexOf(method);
 
   if (index === -1) {
-    return
+    return;
   }
 
-  state.registry[name].splice(index, 1)
+  state.registry[name].splice(index, 1);
 }
 
 
@@ -6128,6 +6271,36 @@ function expand(str, isTop) {
 
 /***/ }),
 
+/***/ 1291:
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = ccount
+
+function ccount(source, character) {
+  var value = String(source)
+  var count = 0
+  var index
+
+  if (typeof character !== 'string') {
+    throw new Error('Expected character')
+  }
+
+  index = value.indexOf(character)
+
+  while (index !== -1) {
+    count++
+    index = value.indexOf(character, index + character.length)
+  }
+
+  return count
+}
+
+
+/***/ }),
+
 /***/ 6891:
 /***/ ((module) => {
 
@@ -6172,6 +6345,27 @@ class Deprecation extends Error {
 }
 
 exports.Deprecation = Deprecation;
+
+
+/***/ }),
+
+/***/ 8691:
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = string => {
+	if (typeof string !== 'string') {
+		throw new TypeError('Expected a string');
+	}
+
+	// Escape characters with special meaning either inside or outside character sets.
+	// Use a simple backslash escape when it’s always valid, and a \unnnn escape when the simpler form would be disallowed by Unicode patterns’ stricter grammar.
+	return string
+		.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
+		.replace(/-/g, '\\x2d');
+};
 
 
 /***/ }),
@@ -6412,6 +6606,23 @@ module.exports.load                = loader.load;
 module.exports.loadAll             = loader.loadAll;
 module.exports.dump                = dumper.dump;
 module.exports.YAMLException = __nccwpck_require__(8179);
+
+// Re-export all types in case user wants to create custom schema
+module.exports.types = {
+  binary:    __nccwpck_require__(7900),
+  float:     __nccwpck_require__(2705),
+  map:       __nccwpck_require__(6150),
+  null:      __nccwpck_require__(721),
+  pairs:     __nccwpck_require__(6860),
+  set:       __nccwpck_require__(9548),
+  timestamp: __nccwpck_require__(9212),
+  bool:      __nccwpck_require__(4993),
+  int:       __nccwpck_require__(1615),
+  merge:     __nccwpck_require__(6104),
+  omap:      __nccwpck_require__(9046),
+  seq:       __nccwpck_require__(7283),
+  str:       __nccwpck_require__(3619)
+};
 
 // Removed functions from JS-YAML 3.0.x
 module.exports.safeLoad            = renamed('safeLoad', 'load');
@@ -9271,25 +9482,25 @@ var YAMLException = __nccwpck_require__(8179);
 var Type          = __nccwpck_require__(6073);
 
 
-function compileList(schema, name, result) {
-  var exclude = [];
+function compileList(schema, name) {
+  var result = [];
 
   schema[name].forEach(function (currentType) {
+    var newIndex = result.length;
+
     result.forEach(function (previousType, previousIndex) {
       if (previousType.tag === currentType.tag &&
           previousType.kind === currentType.kind &&
           previousType.multi === currentType.multi) {
 
-        exclude.push(previousIndex);
+        newIndex = previousIndex;
       }
     });
 
-    result.push(currentType);
+    result[newIndex] = currentType;
   });
 
-  return result.filter(function (type, index) {
-    return exclude.indexOf(index) === -1;
-  });
+  return result;
 }
 
 
@@ -9375,8 +9586,8 @@ Schema.prototype.extend = function extend(definition) {
   result.implicit = (this.implicit || []).concat(implicit);
   result.explicit = (this.explicit || []).concat(explicit);
 
-  result.compiledImplicit = compileList(result, 'implicit', []);
-  result.compiledExplicit = compileList(result, 'explicit', []);
+  result.compiledImplicit = compileList(result, 'implicit');
+  result.compiledExplicit = compileList(result, 'explicit');
   result.compiledTypeMap  = compileMap(result.compiledImplicit, result.compiledExplicit);
 
   return result;
@@ -9649,6 +9860,7 @@ function Type(tag, options) {
   });
 
   // TODO: Add tag format check.
+  this.options       = options; // keep original options in case user wants to extend this type later
   this.tag           = tag;
   this.kind          = options['kind']          || null;
   this.resolve       = options['resolve']       || function () { return true; };
@@ -10774,6 +10986,194 @@ function toAlignment(value) {
 
 /***/ }),
 
+/***/ 6855:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+module.exports = findAndReplace
+
+var visit = __nccwpck_require__(3246)
+var convert = __nccwpck_require__(4070)
+var escape = __nccwpck_require__(8691)
+
+var splice = [].splice
+
+function findAndReplace(tree, find, replace, options) {
+  var settings
+  var schema
+
+  if (typeof find === 'string' || (find && typeof find.exec === 'function')) {
+    schema = [[find, replace]]
+  } else {
+    schema = find
+    options = replace
+  }
+
+  settings = options || {}
+
+  search(tree, settings, handlerFactory(toPairs(schema)))
+
+  return tree
+
+  function handlerFactory(pairs) {
+    var pair = pairs[0]
+
+    return handler
+
+    function handler(node, parent) {
+      var find = pair[0]
+      var replace = pair[1]
+      var nodes = []
+      var start = 0
+      var index = parent.children.indexOf(node)
+      var position
+      var match
+      var subhandler
+      var value
+
+      find.lastIndex = 0
+
+      match = find.exec(node.value)
+
+      while (match) {
+        position = match.index
+        value = replace.apply(
+          null,
+          [].concat(match, {index: match.index, input: match.input})
+        )
+
+        if (value !== false) {
+          if (start !== position) {
+            nodes.push({type: 'text', value: node.value.slice(start, position)})
+          }
+
+          if (typeof value === 'string' && value.length > 0) {
+            value = {type: 'text', value: value}
+          }
+
+          if (value) {
+            nodes = [].concat(nodes, value)
+          }
+
+          start = position + match[0].length
+        }
+
+        if (!find.global) {
+          break
+        }
+
+        match = find.exec(node.value)
+      }
+
+      if (position === undefined) {
+        nodes = [node]
+        index--
+      } else {
+        if (start < node.value.length) {
+          nodes.push({type: 'text', value: node.value.slice(start)})
+        }
+
+        nodes.unshift(index, 1)
+        splice.apply(parent.children, nodes)
+      }
+
+      if (pairs.length > 1) {
+        subhandler = handlerFactory(pairs.slice(1))
+        position = -1
+
+        while (++position < nodes.length) {
+          node = nodes[position]
+
+          if (node.type === 'text') {
+            subhandler(node, parent)
+          } else {
+            search(node, settings, subhandler)
+          }
+        }
+      }
+
+      return index + nodes.length + 1
+    }
+  }
+}
+
+function search(tree, settings, handler) {
+  var ignored = convert(settings.ignore || [])
+  var result = []
+
+  visit(tree, 'text', visitor)
+
+  return result
+
+  function visitor(node, parents) {
+    var index = -1
+    var parent
+    var grandparent
+
+    while (++index < parents.length) {
+      parent = parents[index]
+
+      if (
+        ignored(
+          parent,
+          grandparent ? grandparent.children.indexOf(parent) : undefined,
+          grandparent
+        )
+      ) {
+        return
+      }
+
+      grandparent = parent
+    }
+
+    return handler(node, grandparent)
+  }
+}
+
+function toPairs(schema) {
+  var result = []
+  var key
+  var index
+
+  if (typeof schema !== 'object') {
+    throw new Error('Expected array or object as schema')
+  }
+
+  if ('length' in schema) {
+    index = -1
+
+    while (++index < schema.length) {
+      result.push([
+        toExpression(schema[index][0]),
+        toFunction(schema[index][1])
+      ])
+    }
+  } else {
+    for (key in schema) {
+      result.push([toExpression(key), toFunction(schema[key])])
+    }
+  }
+
+  return result
+}
+
+function toExpression(find) {
+  return typeof find === 'string' ? new RegExp(escape(find), 'g') : find
+}
+
+function toFunction(replace) {
+  return typeof replace === 'function' ? replace : returner
+
+  function returner() {
+    return replace
+  }
+}
+
+
+/***/ }),
+
 /***/ 6869:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -10784,14 +11184,16 @@ module.exports = fromMarkdown
 
 // These three are compiled away in the `dist/`
 
-var decode = __nccwpck_require__(3485)
-var toString = __nccwpck_require__(3162)
+var toString = __nccwpck_require__(5789)
+var assign = __nccwpck_require__(3512)
 var own = __nccwpck_require__(3500)
 var normalizeIdentifier = __nccwpck_require__(712)
 var safeFromInt = __nccwpck_require__(6214)
 var parser = __nccwpck_require__(488)
 var preprocessor = __nccwpck_require__(5603)
 var postprocess = __nccwpck_require__(6948)
+var decode = __nccwpck_require__(3485)
+var stringifyPosition = __nccwpck_require__(1957)
 
 function fromMarkdown(value, encoding, options) {
   if (typeof encoding !== 'string') {
@@ -10811,6 +11213,7 @@ function compiler(options) {
   var settings = options || {}
   var config = configure(
     {
+      transforms: [],
       canContainEols: [
         'emphasis',
         'fragment',
@@ -10873,7 +11276,7 @@ function compiler(options) {
         characterEscapeValue: onexitdata,
         characterReferenceMarkerHexadecimal: onexitcharacterreferencemarker,
         characterReferenceMarkerNumeric: onexitcharacterreferencemarker,
-        characterReferenceValue: closer(onexitcharacterreferencevalue),
+        characterReferenceValue: onexitcharacterreferencevalue,
         codeFenced: closer(onexitcodefenced),
         codeFencedFence: onexitcodefencedfence,
         codeFencedFenceInfo: onexitcodefencedfenceinfo,
@@ -10923,24 +11326,34 @@ function compiler(options) {
   return compile
 
   function compile(events) {
-    var stack = [{type: 'root', children: []}]
-    var index = -1
+    var tree = {type: 'root', children: []}
+    var stack = [tree]
+    var tokenStack = []
     var listStack = []
-    var length
+    var index = -1
     var handler
     var listStart
-    var event
+
+    var context = {
+      stack: stack,
+      tokenStack: tokenStack,
+      config: config,
+      enter: enter,
+      exit: exit,
+      buffer: buffer,
+      resume: resume,
+      setData: setData,
+      getData: getData
+    }
 
     while (++index < events.length) {
-      event = events[index]
-
       // We preprocess lists to add `listItem` tokens, and to infer whether
       // items the list itself are spread out.
       if (
-        event[1].type === 'listOrdered' ||
-        event[1].type === 'listUnordered'
+        events[index][1].type === 'listOrdered' ||
+        events[index][1].type === 'listUnordered'
       ) {
-        if (event[0] === 'enter') {
+        if (events[index][0] === 'enter') {
           listStack.push(index)
         } else {
           listStart = listStack.pop(index)
@@ -10950,44 +11363,50 @@ function compiler(options) {
     }
 
     index = -1
-    length = events.length
 
-    while (++index < length) {
+    while (++index < events.length) {
       handler = config[events[index][0]]
 
       if (own.call(handler, events[index][1].type)) {
         handler[events[index][1].type].call(
-          {
-            stack: stack,
-            config: config,
-            enter: enter,
-            exit: exit,
-            buffer: buffer,
-            resume: resume,
-            sliceSerialize: events[index][2].sliceSerialize,
-            setData: setData,
-            getData: getData
-          },
-
+          assign({sliceSerialize: events[index][2].sliceSerialize}, context),
           events[index][1]
         )
       }
     }
 
+    if (tokenStack.length) {
+      throw new Error(
+        'Cannot close document, a token (`' +
+          tokenStack[tokenStack.length - 1].type +
+          '`, ' +
+          stringifyPosition({
+            start: tokenStack[tokenStack.length - 1].start,
+            end: tokenStack[tokenStack.length - 1].end
+          }) +
+          ') is still open'
+      )
+    }
+
     // Figure out `root` position.
-    stack[0].position = {
+    tree.position = {
       start: point(
-        length ? events[0][1].start : {line: 1, column: 1, offset: 0}
+        events.length ? events[0][1].start : {line: 1, column: 1, offset: 0}
       ),
 
       end: point(
-        length
+        events.length
           ? events[events.length - 2][1].end
           : {line: 1, column: 1, offset: 0}
       )
     }
 
-    return stack[0]
+    index = -1
+    while (++index < config.transforms.length) {
+      tree = config.transforms[index](tree) || tree
+    }
+
+    return tree
   }
 
   function prepareList(events, start, length) {
@@ -11150,6 +11569,7 @@ function compiler(options) {
   function enter(node, token) {
     this.stack[this.stack.length - 1].children.push(node)
     this.stack.push(node)
+    this.tokenStack.push(token)
     node.position = {start: point(token.start)}
     return node
   }
@@ -11165,13 +11585,36 @@ function compiler(options) {
 
   function exit(token) {
     var node = this.stack.pop()
+    var open = this.tokenStack.pop()
+
+    if (!open) {
+      throw new Error(
+        'Cannot close `' +
+          token.type +
+          '` (' +
+          stringifyPosition({start: token.start, end: token.end}) +
+          '): it’s not open'
+      )
+    } else if (open.type !== token.type) {
+      throw new Error(
+        'Cannot close `' +
+          token.type +
+          '` (' +
+          stringifyPosition({start: token.start, end: token.end}) +
+          '): a different token (`' +
+          open.type +
+          '`, ' +
+          stringifyPosition({start: open.start, end: open.end}) +
+          ') is open'
+      )
+    }
+
     node.position.end = point(token.end)
     return node
   }
 
   function resume() {
-    var value = toString(this.stack.pop())
-    return value
+    return toString(this.stack.pop())
   }
 
   //
@@ -11298,11 +11741,10 @@ function compiler(options) {
       return
     }
 
-    if (getData('setextHeadingSlurpLineEnding')) {
-      return
-    }
-
-    if (config.canContainEols.indexOf(context.type) !== -1) {
+    if (
+      !getData('setextHeadingSlurpLineEnding') &&
+      config.canContainEols.indexOf(context.type) > -1
+    ) {
       onenterdata.call(this, token)
       onexitdata.call(this, token)
     }
@@ -11420,6 +11862,7 @@ function compiler(options) {
     var data = this.sliceSerialize(token)
     var type = getData('characterReferenceType')
     var value
+    var tail
 
     if (type) {
       value = safeFromInt(
@@ -11432,7 +11875,9 @@ function compiler(options) {
       value = decode(data)
     }
 
-    this.stack[this.stack.length - 1].value += value
+    tail = this.stack.pop()
+    tail.value += value
+    tail.position.end = point(token.end)
   }
 
   function onexitautolinkprotocol(token) {
@@ -11533,10 +11978,9 @@ function compiler(options) {
 }
 
 function configure(config, extensions) {
-  var length = extensions.length
   var index = -1
 
-  while (++index < length) {
+  while (++index < extensions.length) {
     extension(config, extensions[index])
   }
 
@@ -11546,16 +11990,14 @@ function configure(config, extensions) {
 function extension(config, extension) {
   var key
   var left
-  var right
 
   for (key in extension) {
     left = own.call(config, key) ? config[key] : (config[key] = {})
-    right = extension[key]
 
-    if (key === 'canContainEols') {
-      config[key] = [].concat(left, right)
+    if (key === 'canContainEols' || key === 'transforms') {
+      config[key] = [].concat(left, extension[key])
     } else {
-      Object.assign(left, right)
+      Object.assign(left, extension[key])
     }
   }
 }
@@ -11574,47 +12016,15 @@ module.exports = __nccwpck_require__(6869)
 
 /***/ }),
 
-/***/ 3162:
-/***/ ((module) => {
-
-"use strict";
-
-
-module.exports = toString
-
-// Get the text content of a node.
-// Prefer the node’s plain-text fields, otherwise serialize its children,
-// and if the given value is an array, serialize the nodes in it.
-function toString(node) {
-  return (
-    (node &&
-      (node.value ||
-        node.alt ||
-        node.title ||
-        ('children' in node && all(node.children)) ||
-        ('length' in node && all(node)))) ||
-    ''
-  )
-}
-
-function all(values) {
-  var result = []
-  var length = values.length
-  var index = -1
-
-  while (++index < length) {
-    result[index] = toString(values[index])
-  }
-
-  return result.join('')
-}
-
-
-/***/ }),
-
 /***/ 4857:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
+var ccount = __nccwpck_require__(1291)
+var findAndReplace = __nccwpck_require__(6855)
+var unicodePunctuation = __nccwpck_require__(9372)
+var unicodeWhitespace = __nccwpck_require__(9968)
+
+exports.transforms = [transformGfmAutolinkLiterals]
 exports.enter = {
   literalAutolink: enterLiteralAutolink,
   literalAutolinkEmail: enterLiteralAutolinkValue,
@@ -11653,6 +12063,120 @@ function exitLiteralAutolink(token) {
   this.exit(token)
 }
 
+function transformGfmAutolinkLiterals(tree) {
+  findAndReplace(
+    tree,
+    [
+      [/(https?:\/\/|www(?=\.))([-.\w]+)([^ \t\r\n]*)/i, findUrl],
+      [/([-.\w+]+)@([-\w]+(?:\.[-\w]+)+)/, findEmail]
+    ],
+    {ignore: ['link', 'linkReference']}
+  )
+}
+
+function findUrl($0, protocol, domain, path, match) {
+  var prefix = ''
+  var parts
+  var result
+
+  // Not an expected previous character.
+  if (!previous(match)) {
+    return false
+  }
+
+  // Treat `www` as part of the domain.
+  if (/^w/i.test(protocol)) {
+    domain = protocol + domain
+    protocol = ''
+    prefix = 'http://'
+  }
+
+  if (!isCorrectDomain(domain)) {
+    return false
+  }
+
+  parts = splitUrl(domain + path)
+
+  if (!parts[0]) return false
+
+  result = {
+    type: 'link',
+    title: null,
+    url: prefix + protocol + parts[0],
+    children: [{type: 'text', value: protocol + parts[0]}]
+  }
+
+  if (parts[1]) {
+    result = [result, {type: 'text', value: parts[1]}]
+  }
+
+  return result
+}
+
+function findEmail($0, atext, label, match) {
+  // Not an expected previous character.
+  if (!previous(match, true) || /[_-]$/.test(label)) {
+    return false
+  }
+
+  return {
+    type: 'link',
+    title: null,
+    url: 'mailto:' + atext + '@' + label,
+    children: [{type: 'text', value: atext + '@' + label}]
+  }
+}
+
+function isCorrectDomain(domain) {
+  var parts = domain.split('.')
+
+  if (
+    parts.length < 2 ||
+    (parts[parts.length - 1] &&
+      (/_/.test(parts[parts.length - 1]) ||
+        !/[a-zA-Z\d]/.test(parts[parts.length - 1]))) ||
+    (parts[parts.length - 2] &&
+      (/_/.test(parts[parts.length - 2]) ||
+        !/[a-zA-Z\d]/.test(parts[parts.length - 2])))
+  ) {
+    return false
+  }
+
+  return true
+}
+
+function splitUrl(url) {
+  var trail = /[!"&'),.:;<>?\]}]+$/.exec(url)
+  var closingParenIndex
+  var openingParens
+  var closingParens
+
+  if (trail) {
+    url = url.slice(0, trail.index)
+    trail = trail[0]
+    closingParenIndex = trail.indexOf(')')
+    openingParens = ccount(url, '(')
+    closingParens = ccount(url, ')')
+
+    while (closingParenIndex !== -1 && openingParens > closingParens) {
+      url += trail.slice(0, closingParenIndex + 1)
+      trail = trail.slice(closingParenIndex + 1)
+      closingParenIndex = trail.indexOf(')')
+      closingParens++
+    }
+  }
+
+  return [url, trail]
+}
+
+function previous(match, email) {
+  var code = match.input.charCodeAt(match.index - 1)
+  return (
+    (code !== code || unicodeWhitespace(code) || unicodePunctuation(code)) &&
+    (!email || code !== 47)
+  )
+}
+
 
 /***/ }),
 
@@ -11660,7 +12184,7 @@ function exitLiteralAutolink(token) {
 /***/ ((__unused_webpack_module, exports) => {
 
 var inConstruct = 'phrasing'
-var notInConstruct = ['autolink', 'link', 'image']
+var notInConstruct = ['autolink', 'link', 'image', 'label']
 
 exports.unsafe = [
   {
@@ -11900,7 +12424,7 @@ function toMarkdown(options) {
     var value = defaultInlineCode(node, parent, context)
 
     if (context.stack.indexOf('tableCell') !== -1) {
-      value = value.replace(/\|/, '\\$&')
+      value = value.replace(/\|/g, '\\$&')
     }
 
     return value
@@ -12014,7 +12538,7 @@ module.exports = configure([
 ])
 
 function configure(extensions) {
-  var config = {canContainEols: []}
+  var config = {transforms: [], canContainEols: []}
   var length = extensions.length
   var index = -1
 
@@ -12034,7 +12558,7 @@ function extension(config, extension) {
     left = own.call(config, key) ? config[key] : (config[key] = {})
     right = extension[key]
 
-    if (key === 'canContainEols') {
+    if (key === 'canContainEols' || key === 'transforms') {
       config[key] = [].concat(left, right)
     } else {
       Object.assign(left, right)
@@ -12052,30 +12576,23 @@ var autolinkLiteral = __nccwpck_require__(7339)
 var strikethrough = __nccwpck_require__(6474)
 var table = __nccwpck_require__(2689)
 var taskListItem = __nccwpck_require__(7319)
+var configure = __nccwpck_require__(9363)
 
 module.exports = toMarkdown
 
 function toMarkdown(options) {
-  var extensions = [
-    autolinkLiteral,
-    strikethrough,
-    table(options),
-    taskListItem
-  ]
-  var length = extensions.length
-  var index = -1
-  var extension
-  var unsafe = []
-  var handlers = {}
+  var config = configure(
+    {handlers: {}, join: [], unsafe: [], options: {}},
+    {
+      extensions: [autolinkLiteral, strikethrough, table(options), taskListItem]
+    }
+  )
 
-  while (++index < length) {
-    extension = extensions[index]
-    // istanbul ignore next - unsafe always exists, for now.
-    unsafe = unsafe.concat(extension.unsafe || [])
-    handlers = Object.assign(handlers, extension.handlers || {})
-  }
-
-  return {unsafe: unsafe, handlers: handlers}
+  return Object.assign(config.options, {
+    handlers: config.handlers,
+    join: config.join,
+    unsafe: config.unsafe
+  })
 }
 
 
@@ -12085,6 +12602,40 @@ function toMarkdown(options) {
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 module.exports = __nccwpck_require__(3683)
+
+
+/***/ }),
+
+/***/ 9363:
+/***/ ((module) => {
+
+module.exports = configure
+
+function configure(base, extension) {
+  var index = -1
+  var key
+
+  // First do subextensions.
+  if (extension.extensions) {
+    while (++index < extension.extensions.length) {
+      configure(base, extension.extensions[index])
+    }
+  }
+
+  for (key in extension) {
+    if (key === 'extensions') {
+      // Empty.
+    } else if (key === 'unsafe' || key === 'join') {
+      base[key] = base[key].concat(extension[key] || [])
+    } else if (key === 'handlers') {
+      base[key] = Object.assign(base[key], extension[key] || {})
+    } else {
+      base.options[key] = extension[key]
+    }
+  }
+
+  return base
+}
 
 
 /***/ }),
@@ -12112,11 +12663,26 @@ function map(line, index, blank) {
 /***/ }),
 
 /***/ 229:
-/***/ ((module) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 module.exports = hardBreak
 
-function hardBreak() {
+var patternInScope = __nccwpck_require__(8850)
+
+function hardBreak(node, _, context, safe) {
+  var index = -1
+
+  while (++index < context.unsafe.length) {
+    // If we can’t put eols in this construct (setext headings, tables), use a
+    // space instead.
+    if (
+      context.unsafe[index].character === '\n' &&
+      patternInScope(context.stack, context.unsafe[index])
+    ) {
+      return /[ \t]/.test(safe.before) ? '' : ' '
+    }
+  }
+
   return '\\\n'
 }
 
@@ -12334,9 +12900,14 @@ function heading(node, _, context) {
 /***/ ((module) => {
 
 module.exports = html
+html.peek = htmlPeek
 
 function html(node) {
   return node.value || ''
+}
+
+function htmlPeek() {
+  return '<'
 }
 
 
@@ -12474,15 +13045,21 @@ exports.thematicBreak = __nccwpck_require__(3960)
 /***/ }),
 
 /***/ 5645:
-/***/ ((module) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 module.exports = inlineCode
 inlineCode.peek = inlineCodePeek
 
-function inlineCode(node) {
+var patternCompile = __nccwpck_require__(4810)
+
+function inlineCode(node, parent, context) {
   var value = node.value || ''
   var sequence = '`'
-  var pad = ''
+  var index = -1
+  var pattern
+  var expression
+  var match
+  var position
 
   // If there is a single grave accent on its own in the code, use a fence of
   // two.
@@ -12498,10 +13075,42 @@ function inlineCode(node) {
     (/[ \r\n`]/.test(value.charAt(0)) ||
       /[ \r\n`]/.test(value.charAt(value.length - 1)))
   ) {
-    pad = ' '
+    value = ' ' + value + ' '
   }
 
-  return sequence + pad + value + pad + sequence
+  // We have a potential problem: certain characters after eols could result in
+  // blocks being seen.
+  // For example, if someone injected the string `'\n# b'`, then that would
+  // result in an ATX heading.
+  // We can’t escape characters in `inlineCode`, but because eols are
+  // transformed to spaces when going from markdown to HTML anyway, we can swap
+  // them out.
+  while (++index < context.unsafe.length) {
+    pattern = context.unsafe[index]
+
+    // Only look for `atBreak`s.
+    // Btw: note that `atBreak` patterns will always start the regex at LF or
+    // CR.
+    if (!pattern.atBreak) continue
+
+    expression = patternCompile(pattern)
+
+    while ((match = expression.exec(value))) {
+      position = match.index
+
+      // Support CRLF (patterns only look for one of the characters).
+      if (
+        value.charCodeAt(position) === 10 /* `\n` */ &&
+        value.charCodeAt(position - 1) === 13 /* `\r` */
+      ) {
+        position--
+      }
+
+      value = value.slice(0, position) + ' ' + value.slice(match.index + 1)
+    }
+  }
+
+  return sequence + value + sequence
 }
 
 function inlineCodePeek() {
@@ -12575,7 +13184,7 @@ function link(node, _, context) {
   var value
   var stack
 
-  if (formatLinkAsAutolink(node)) {
+  if (formatLinkAsAutolink(node, context)) {
     // Hide the fact that we’re in phrasing, because escapes don’t work.
     stack = context.stack
     context.stack = []
@@ -12626,8 +13235,8 @@ function link(node, _, context) {
   return value
 }
 
-function linkPeek(node) {
-  return formatLinkAsAutolink(node) ? '<' : '['
+function linkPeek(node, _, context) {
+  return formatLinkAsAutolink(node, context) ? '<' : '['
 }
 
 
@@ -12806,28 +13415,41 @@ function thematicBreak(node, parent, context) {
 module.exports = toMarkdown
 
 var zwitch = __nccwpck_require__(1067)
+var configure = __nccwpck_require__(9363)
 var defaultHandlers = __nccwpck_require__(3769)
-var defaultUnsafePatterns = __nccwpck_require__(6566)
 var defaultJoin = __nccwpck_require__(3701)
+var defaultUnsafe = __nccwpck_require__(6566)
 
 function toMarkdown(tree, options) {
   var settings = options || {}
-  var extensions = configure(settings)
-  var stack = []
-  var handle = zwitch('type', {
+  var context = {
+    enter: enter,
+    stack: [],
+    unsafe: [],
+    join: [],
+    handlers: {},
+    options: {}
+  }
+  var result
+
+  configure(context, {
+    unsafe: defaultUnsafe,
+    join: defaultJoin,
+    handlers: defaultHandlers
+  })
+  configure(context, settings)
+
+  if (context.options.tightDefinitions) {
+    context.join = [joinDefinition].concat(context.join)
+  }
+
+  context.handle = zwitch('type', {
     invalid: invalid,
     unknown: unknown,
-    handlers: extensions.handlers
+    handlers: context.handlers
   })
-  var context = {
-    handle: handle,
-    stack: stack,
-    enter: enter,
-    options: settings,
-    unsafePatterns: extensions.unsafe,
-    join: extensions.join
-  }
-  var result = handle(tree, null, context, {before: '\n', after: '\n'})
+
+  result = context.handle(tree, null, context, {before: '\n', after: '\n'})
 
   if (
     result &&
@@ -12840,11 +13462,11 @@ function toMarkdown(tree, options) {
   return result
 
   function enter(name) {
-    stack.push(name)
+    context.stack.push(name)
     return exit
 
     function exit() {
-      stack.pop()
+      context.stack.pop()
     }
   }
 }
@@ -12855,28 +13477,6 @@ function invalid(value) {
 
 function unknown(node) {
   throw new Error('Cannot handle unknown node `' + node.type + '`')
-}
-
-function configure(settings) {
-  var extensions = [
-    {unsafe: settings.unsafe, handlers: settings.handlers, join: settings.join}
-  ].concat(settings.extensions || [])
-  var unsafe = defaultUnsafePatterns
-  var join = defaultJoin
-  var handlers = Object.assign({}, defaultHandlers)
-  var index = -1
-
-  if (settings.tightDefinitions) {
-    join = [joinDefinition].concat(join)
-  }
-
-  while (++index < extensions.length) {
-    unsafe = unsafe.concat(extensions[index].unsafe || [])
-    join = join.concat(extensions[index].join || [])
-    Object.assign(handlers, extensions[index].handlers || {})
-  }
-
-  return {unsafe: unsafe, join: join, handlers: handlers}
 }
 
 function joinDefinition(left, right) {
@@ -12974,6 +13574,7 @@ module.exports = [
   {character: '"', inConstruct: 'titleQuote'},
   // A number sign could start an ATX heading if it starts a line.
   {atBreak: true, character: '#'},
+  {character: '#', inConstruct: 'headingAtx', after: '(?:[\r\n]|$)'},
   // Dollar sign and percentage are not used in markdown.
   // An ampersand could start a character reference.
   {character: '&', after: '[#A-Za-z]', inConstruct: 'phrasing'},
@@ -13014,13 +13615,10 @@ module.exports = [
   // Question mark and at sign are not used in markdown for constructs.
   // A left bracket can start definitions, references, labels,
   {atBreak: true, character: '['},
-  {
-    character: '[',
-    inConstruct: ['phrasing', 'label', 'reference']
-  },
+  {character: '[', inConstruct: ['phrasing', 'label', 'reference']},
   // A backslash can start an escape (when followed by punctuation) or a
   // hard break (when followed by an eol).
-  {character: '\\', after: '[!-/:-@[-`{-~]'},
+  // Note: typical escapes are handled in `safe`!
   {character: '\\', after: '[\\r\\n]', inConstruct: 'phrasing'},
   // A right bracket can exit labels.
   {
@@ -13353,12 +13951,31 @@ function phrasing(parent, context, safeOptions) {
       after = safeOptions.after
     }
 
+    // In some cases, html (text) can be found in phrasing right after an eol.
+    // When we’d serialize that, in most cases that would be seen as html
+    // (flow).
+    // As we can’t escape or so to prevent it from happening, we take a somewhat
+    // reasonable approach: replace that eol with a space.
+    // See: <https://github.com/syntax-tree/mdast-util-to-markdown/issues/15>
+    if (
+      results.length > 0 &&
+      (before === '\r' || before === '\n') &&
+      child.type === 'html'
+    ) {
+      results[results.length - 1] = results[results.length - 1].replace(
+        /(\r?\n|\r)$/,
+        ' '
+      )
+      before = ' '
+    }
+
     results.push(
       context.handle(child, parent, context, {
         before: before,
         after: after
       })
     )
+
     before = results[results.length - 1].slice(-1)
   }
 
@@ -13375,14 +13992,14 @@ module.exports = formatCodeAsIndented
 
 function formatCodeAsIndented(node, context) {
   return (
-    node.value &&
     !context.options.fences &&
+    node.value &&
     // If there’s no info…
     !node.lang &&
     // And there’s a non-whitespace character…
     /[^ \r\n]/.test(node.value) &&
     // And the value doesn’t start or end in a blank…
-    !/^[\t ]*[\r\n]|[\r\n][\t ]*$/.test(node.value)
+    !/^[\t ]*(?:[\r\n]|$)|(?:^|[\r\n])[\t ]*$/.test(node.value)
   )
 }
 
@@ -13394,7 +14011,7 @@ function formatCodeAsIndented(node, context) {
 
 module.exports = formatHeadingAsSetext
 
-var toString = __nccwpck_require__(7949)
+var toString = __nccwpck_require__(5789)
 
 function formatHeadingAsSetext(node, context) {
   return (
@@ -13410,16 +14027,21 @@ function formatHeadingAsSetext(node, context) {
 
 module.exports = formatLinkAsAutolink
 
-var toString = __nccwpck_require__(7949)
+var toString = __nccwpck_require__(5789)
 
-function formatLinkAsAutolink(node) {
+function formatLinkAsAutolink(node, context) {
   var raw = toString(node)
 
   return (
+    !context.options.resourceLink &&
     // If there’s a url…
     node.url &&
     // And there’s a no title…
     !node.title &&
+    // And the content of `node` is a single text node…
+    node.children &&
+    node.children.length === 1 &&
+    node.children[0].type === 'text' &&
     // And if the url is the same as the content…
     (raw === node.url || 'mailto:' + raw === node.url) &&
     // And that starts w/ a protocol…
@@ -13465,10 +14087,82 @@ function indentLines(value, map) {
 
 /***/ }),
 
-/***/ 3906:
+/***/ 4810:
 /***/ ((module) => {
 
+module.exports = patternCompile
+
+function patternCompile(pattern) {
+  var before
+  var after
+
+  if (!pattern._compiled) {
+    before = pattern.before ? '(?:' + pattern.before + ')' : ''
+    after = pattern.after ? '(?:' + pattern.after + ')' : ''
+
+    if (pattern.atBreak) {
+      before = '[\\r\\n][\\t ]*' + before
+    }
+
+    pattern._compiled = new RegExp(
+      (before ? '(' + before + ')' : '') +
+        (/[|\\{}()[\]^$+*?.-]/.test(pattern.character) ? '\\' : '') +
+        pattern.character +
+        (after || ''),
+      'g'
+    )
+  }
+
+  return pattern._compiled
+}
+
+
+/***/ }),
+
+/***/ 8850:
+/***/ ((module) => {
+
+module.exports = patternInScope
+
+function patternInScope(stack, pattern) {
+  return (
+    listInScope(stack, pattern.inConstruct, true) &&
+    !listInScope(stack, pattern.notInConstruct)
+  )
+}
+
+function listInScope(stack, list, none) {
+  var index
+
+  if (!list) {
+    return none
+  }
+
+  if (typeof list === 'string') {
+    list = [list]
+  }
+
+  index = -1
+
+  while (++index < list.length) {
+    if (stack.indexOf(list[index]) !== -1) {
+      return true
+    }
+  }
+
+  return false
+}
+
+
+/***/ }),
+
+/***/ 3906:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
 module.exports = safe
+
+var patternCompile = __nccwpck_require__(4810)
+var patternInScope = __nccwpck_require__(8850)
 
 function safe(context, input, config) {
   var value = (config.before || '') + (input || '') + (config.after || '')
@@ -13485,22 +14179,19 @@ function safe(context, input, config) {
   var start
   var end
 
-  while (++index < context.unsafePatterns.length) {
-    pattern = context.unsafePatterns[index]
+  while (++index < context.unsafe.length) {
+    pattern = context.unsafe[index]
 
-    if (
-      !inScope(context.stack, pattern.inConstruct, true) ||
-      inScope(context.stack, pattern.notInConstruct)
-    ) {
+    if (!patternInScope(context.stack, pattern)) {
       continue
     }
 
-    expression =
-      pattern._compiled || (pattern._compiled = toExpression(pattern))
+    expression = patternCompile(pattern)
 
     while ((match = expression.exec(value))) {
       before = 'before' in pattern || pattern.atBreak
       after = 'after' in pattern
+
       position = match.index + (before ? match[1].length : 0)
 
       if (positions.indexOf(position) === -1) {
@@ -13549,7 +14240,10 @@ function safe(context, input, config) {
     }
 
     if (start !== position) {
-      result.push(value.slice(start, position))
+      // If we have to use a character reference, an ampersand would be more
+      // correct, but as backslashes only care about punctuation, either will
+      // do the trick
+      result.push(escapeBackslashes(value.slice(start, position), '\\'))
     }
 
     start = position
@@ -13569,90 +14263,40 @@ function safe(context, input, config) {
     }
   }
 
-  result.push(value.slice(start, end))
+  result.push(escapeBackslashes(value.slice(start, end), config.after))
 
   return result.join('')
-}
-
-function inScope(stack, list, none) {
-  var index
-
-  if (!list) {
-    return none
-  }
-
-  if (typeof list === 'string') {
-    list = [list]
-  }
-
-  index = -1
-
-  while (++index < list.length) {
-    if (stack.indexOf(list[index]) !== -1) {
-      return true
-    }
-  }
-
-  return false
-}
-
-function toExpression(pattern) {
-  var before = pattern.before ? '(?:' + pattern.before + ')' : ''
-  var after = pattern.after ? '(?:' + pattern.after + ')' : ''
-
-  if (pattern.atBreak) {
-    before = '[\\r\\n][\\t ]*' + before
-  }
-
-  return new RegExp(
-    (before ? '(' + before + ')' : '') +
-      (/[|\\{}()[\]^$+*?.-]/.test(pattern.character) ? '\\' : '') +
-      pattern.character +
-      (after || ''),
-    'g'
-  )
 }
 
 function numerical(a, b) {
   return a - b
 }
 
-
-/***/ }),
-
-/***/ 7949:
-/***/ ((module) => {
-
-"use strict";
-
-
-module.exports = toString
-
-// Get the text content of a node.
-// Prefer the node’s plain-text fields, otherwise serialize its children,
-// and if the given value is an array, serialize the nodes in it.
-function toString(node) {
-  return (
-    (node &&
-      (node.value ||
-        node.alt ||
-        node.title ||
-        ('children' in node && all(node.children)) ||
-        ('length' in node && all(node)))) ||
-    ''
-  )
-}
-
-function all(values) {
-  var result = []
-  var length = values.length
+function escapeBackslashes(value, after) {
+  var expression = /\\(?=[!-/:-@[-`{-~])/g
+  var positions = []
+  var results = []
   var index = -1
+  var start = 0
+  var whole = value + after
+  var match
 
-  while (++index < length) {
-    result[index] = toString(values[index])
+  while ((match = expression.exec(whole))) {
+    positions.push(match.index)
   }
 
-  return result.join('')
+  while (++index < positions.length) {
+    if (start !== positions[index]) {
+      results.push(value.slice(start, positions[index]))
+    }
+
+    results.push('\\')
+    start = positions[index]
+  }
+
+  results.push(value.slice(start))
+
+  return results.join('')
 }
 
 
@@ -13706,18 +14350,25 @@ module.exports = __nccwpck_require__(2007)
 /***/ 2007:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
-var asciiAlphanumeric = __nccwpck_require__(598)
 var asciiAlpha = __nccwpck_require__(3847)
+var asciiAlphanumeric = __nccwpck_require__(598)
+var asciiControl = __nccwpck_require__(1336)
+var markdownLineEnding = __nccwpck_require__(7506)
+var unicodePunctuation = __nccwpck_require__(9372)
+var unicodeWhitespace = __nccwpck_require__(9968)
 
-var domain = {tokenize: tokenizeDomain}
-var path = {tokenize: tokenizePath}
-var punctuation = {tokenize: tokenizePunctuation}
-var paren = {tokenize: tokenizeParen}
-var namedCharacterReference = {tokenize: tokenizeNamedCharacterReference}
+var www = {tokenize: tokenizeWww, partial: true}
+var domain = {tokenize: tokenizeDomain, partial: true}
+var path = {tokenize: tokenizePath, partial: true}
+var punctuation = {tokenize: tokenizePunctuation, partial: true}
+var namedCharacterReference = {
+  tokenize: tokenizeNamedCharacterReference,
+  partial: true
+}
 
-var wwwAutolink = {tokenize: tokenizeWwwAutolink, previous: previous}
-var httpAutolink = {tokenize: tokenizeHttpAutolink, previous: previous}
-var emailAutolink = {tokenize: tokenizeEmailAutolink, previous: previous}
+var wwwAutolink = {tokenize: tokenizeWwwAutolink, previous: previousWww}
+var httpAutolink = {tokenize: tokenizeHttpAutolink, previous: previousHttp}
+var emailAutolink = {tokenize: tokenizeEmailAutolink, previous: previousEmail}
 
 var text = {}
 
@@ -13760,7 +14411,11 @@ function tokenizeEmailAutolink(effects, ok, nok) {
 
   function start(code) {
     /* istanbul ignore next - hooks. */
-    if (!gfmAtext(code) || !previous(self.previous)) {
+    if (
+      !gfmAtext(code) ||
+      !previousEmail(self.previous) ||
+      previous(self.events)
+    ) {
       return nok(code)
     }
 
@@ -13845,44 +14500,24 @@ function tokenizeWwwAutolink(effects, ok, nok) {
 
   function start(code) {
     /* istanbul ignore next - hooks. */
-    if ((code !== 87 && code - 32 !== 87) || !previous(self.previous)) {
+    if (
+      (code !== 87 && code - 32 !== 87) ||
+      !previousWww(self.previous) ||
+      previous(self.events)
+    ) {
       return nok(code)
     }
 
     effects.enter('literalAutolink')
     effects.enter('literalAutolinkWww')
-    effects.consume(code)
-    return w2
-  }
-
-  function w2(code) {
-    // `w`
-    if (code === 87 || code - 32 === 87) {
-      effects.consume(code)
-      return w3
-    }
-
-    return nok(code)
-  }
-
-  function w3(code) {
-    // `w`
-    if (code === 87 || code - 32 === 87) {
-      effects.consume(code)
-      return dot
-    }
-
-    return nok(code)
-  }
-
-  function dot(code) {
-    // `.`
-    if (code === 46) {
-      effects.consume(code)
-      return effects.attempt(domain, effects.attempt(path, done), nok)
-    }
-
-    return nok(code)
+    // For `www.` we check instead of attempt, because when it matches, GH
+    // treats it as part of a domain (yes, it says a valid domain must come
+    // after `www.`, but that’s not how it’s implemented by them).
+    return effects.check(
+      www,
+      effects.attempt(domain, effects.attempt(path, done), nok),
+      nok
+    )(code)
   }
 
   function done(code) {
@@ -13899,7 +14534,11 @@ function tokenizeHttpAutolink(effects, ok, nok) {
 
   function start(code) {
     /* istanbul ignore next - hooks. */
-    if ((code !== 72 && code - 32 !== 72) || !previous(self.previous)) {
+    if (
+      (code !== 72 && code - 32 !== 72) ||
+      !previousHttp(self.previous) ||
+      previous(self.events)
+    ) {
       return nok(code)
     }
 
@@ -13973,10 +14612,18 @@ function tokenizeHttpAutolink(effects, ok, nok) {
     // `/`
     if (code === 47) {
       effects.consume(code)
-      return effects.attempt(domain, effects.attempt(path, done), nok)
+      return after
     }
 
     return nok(code)
+  }
+
+  function after(code) {
+    return asciiControl(code) ||
+      unicodeWhitespace(code) ||
+      unicodePunctuation(code)
+      ? nok(code)
+      : effects.attempt(domain, effects.attempt(path, done), nok)(code)
   }
 
   function done(code) {
@@ -13986,57 +14633,105 @@ function tokenizeHttpAutolink(effects, ok, nok) {
   }
 }
 
-function tokenizeDomain(effects, ok, nok) {
-  var hasUnderscoreInLastSegment
-  var hasUnderscoreInLastLastSegment
-  var hasDot
-
+function tokenizeWww(effects, ok, nok) {
   return start
 
   function start(code) {
-    effects.enter('literalAutolinkDomain')
-    return domain(code)
+    // Assume a `w`.
+    effects.consume(code)
+    return w2
   }
 
-  function domain(code) {
-    if (
-      // `-`
-      code === 45 ||
-      // `_`
-      code === 95 ||
-      asciiAlphanumeric(code)
-    ) {
-      if (code === 95) {
-        hasUnderscoreInLastSegment = true
-      }
+  function w2(code) {
+    // `w`
+    if (code === 87 || code - 32 === 87) {
+      effects.consume(code)
+      return w3
+    }
 
+    return nok(code)
+  }
+
+  function w3(code) {
+    // `w`
+    if (code === 87 || code - 32 === 87) {
+      effects.consume(code)
+      return dot
+    }
+
+    return nok(code)
+  }
+
+  function dot(code) {
+    // `.`
+    if (code === 46) {
+      effects.consume(code)
+      return after
+    }
+
+    return nok(code)
+  }
+
+  function after(code) {
+    return code === null || markdownLineEnding(code) ? nok(code) : ok(code)
+  }
+}
+
+function tokenizeDomain(effects, ok, nok) {
+  var hasUnderscoreInLastSegment
+  var hasUnderscoreInLastLastSegment
+
+  return domain
+
+  function domain(code) {
+    // `&`
+    if (code === 38) {
+      return effects.check(
+        namedCharacterReference,
+        done,
+        punctuationContinuation
+      )(code)
+    }
+
+    if (code === 46 /* `.` */ || code === 95 /* `_` */) {
+      return effects.check(punctuation, done, punctuationContinuation)(code)
+    }
+
+    // GH documents that only alphanumerics (other than `-`, `.`, and `_`) can
+    // occur, which sounds like ASCII only, but they also support `www.點看.com`,
+    // so that’s Unicode.
+    // Instead of some new production for Unicode alphanumerics, markdown
+    // already has that for Unicode punctuation and whitespace, so use those.
+    if (
+      asciiControl(code) ||
+      unicodeWhitespace(code) ||
+      (code !== 45 /* `-` */ && unicodePunctuation(code))
+    ) {
+      return done(code)
+    }
+
+    effects.consume(code)
+    return domain
+  }
+
+  function punctuationContinuation(code) {
+    // `.`
+    if (code === 46) {
+      hasUnderscoreInLastLastSegment = hasUnderscoreInLastSegment
+      hasUnderscoreInLastSegment = undefined
       effects.consume(code)
       return domain
     }
 
-    // `.`
-    if (code === 46) {
-      return effects.check(punctuation, done, dotContinuation)(code)
-    }
+    // `_`
+    if (code === 95) hasUnderscoreInLastSegment = true
 
-    return done(code)
-  }
-
-  function dotContinuation(code) {
     effects.consume(code)
-    hasDot = true
-    hasUnderscoreInLastLastSegment = hasUnderscoreInLastSegment
-    hasUnderscoreInLastSegment = undefined
     return domain
   }
 
   function done(code) {
-    if (
-      hasDot &&
-      !hasUnderscoreInLastLastSegment &&
-      !hasUnderscoreInLastSegment
-    ) {
-      effects.exit('literalAutolinkDomain')
+    if (!hasUnderscoreInLastLastSegment && !hasUnderscoreInLastSegment) {
       return ok(code)
     }
 
@@ -14047,31 +14742,14 @@ function tokenizeDomain(effects, ok, nok) {
 function tokenizePath(effects, ok) {
   var balance = 0
 
-  return start
-
-  function start(code) {
-    if (pathEnd(code)) {
-      return ok(code)
-    }
-
-    if (trailingPunctuation(code)) {
-      return effects.check(punctuation, ok, atPathStart)(code)
-    }
-
-    return atPathStart(code)
-  }
-
-  function atPathStart(code) {
-    effects.enter('literalAutolinkWwwPath')
-    return inPath(code)
-  }
+  return inPath
 
   function inPath(code) {
     // `&`
     if (code === 38) {
       return effects.check(
         namedCharacterReference,
-        atPathEnd,
+        ok,
         continuedPunctuation
       )(code)
     }
@@ -14083,15 +14761,19 @@ function tokenizePath(effects, ok) {
 
     // `)`
     if (code === 41) {
-      return effects.check(paren, parenAtPathEnd, continuedPunctuation)(code)
+      return effects.check(
+        punctuation,
+        parenAtPathEnd,
+        continuedPunctuation
+      )(code)
     }
 
     if (pathEnd(code)) {
-      return atPathEnd(code)
+      return ok(code)
     }
 
     if (trailingPunctuation(code)) {
-      return effects.check(punctuation, atPathEnd, continuedPunctuation)(code)
+      return effects.check(punctuation, ok, continuedPunctuation)(code)
     }
 
     effects.consume(code)
@@ -14105,12 +14787,7 @@ function tokenizePath(effects, ok) {
 
   function parenAtPathEnd(code) {
     balance--
-    return balance < 0 ? atPathEnd(code) : continuedPunctuation(code)
-  }
-
-  function atPathEnd(code) {
-    effects.exit('literalAutolinkWwwPath')
-    return ok(code)
+    return balance < 0 ? ok(code) : continuedPunctuation(code)
   }
 }
 
@@ -14119,7 +14796,6 @@ function tokenizeNamedCharacterReference(effects, ok, nok) {
 
   function start(code) {
     // Assume an ampersand.
-    effects.enter('literalAutolinkCharacterReferenceNamed')
     effects.consume(code)
     return inside
   }
@@ -14142,30 +14818,7 @@ function tokenizeNamedCharacterReference(effects, ok, nok) {
   function after(code) {
     // If the named character reference is followed by the end of the path, it’s
     // not continued punctuation.
-    effects.exit('literalAutolinkCharacterReferenceNamed')
     return pathEnd(code) ? ok(code) : nok(code)
-  }
-}
-
-function tokenizeParen(effects, ok, nok) {
-  return start
-
-  function start(code) {
-    // Assume a right paren.
-    effects.enter('literalAutolinkParen')
-    effects.consume(code)
-    return after
-  }
-
-  function after(code) {
-    // If the punctuation marker is followed by the end of the path, it’s not
-    // continued punctuation.
-    effects.exit('literalAutolinkParen')
-    return pathEnd(code) ||
-      // `)`
-      code === 41
-      ? ok(code)
-      : nok(code)
   }
 }
 
@@ -14173,37 +14826,51 @@ function tokenizePunctuation(effects, ok, nok) {
   return start
 
   function start(code) {
-    effects.enter('literalAutolinkPunctuation')
     // Always a valid trailing punctuation marker.
     effects.consume(code)
     return after
   }
 
   function after(code) {
+    // Check the next.
+    if (trailingPunctuation(code)) {
+      effects.consume(code)
+      return after
+    }
+
     // If the punctuation marker is followed by the end of the path, it’s not
     // continued punctuation.
-    effects.exit('literalAutolinkPunctuation')
     return pathEnd(code) ? ok(code) : nok(code)
   }
 }
 
 function trailingPunctuation(code) {
   return (
-    // Exclamation mark.
+    // `!`
     code === 33 ||
-    // Asterisk.
+    // `"`
+    code === 34 ||
+    // `'`
+    code === 39 ||
+    // `)`
+    code === 41 ||
+    // `*`
     code === 42 ||
-    // Comma.
+    // `,`
     code === 44 ||
-    // Dot.
+    // `.`
     code === 46 ||
-    // Colon.
+    // `:`
     code === 58 ||
-    // Question mark.
+    // `;`
+    code === 59 ||
+    // `<`
+    code === 60 ||
+    // `?`
     code === 63 ||
-    // Underscore.
+    // `_`.
     code === 95 ||
-    // Tilde.
+    // `~`
     code === 126
   )
 }
@@ -14216,42 +14883,53 @@ function pathEnd(code) {
     code < 0 ||
     // Space.
     code === 32 ||
-    // Less than.
+    // `<`
     code === 60
   )
 }
 
 function gfmAtext(code) {
   return (
-    // `+`
-    code === 43 ||
-    // `-`
-    code === 45 ||
-    // `.`
-    code === 46 ||
-    // `_`
-    code === 95 ||
+    code === 43 /* `+` */ ||
+    code === 45 /* `-` */ ||
+    code === 46 /* `.` */ ||
+    code === 95 /* `_` */ ||
     asciiAlphanumeric(code)
   )
 }
 
-function previous(code) {
+function previousWww(code) {
   return (
-    // EOF.
     code === null ||
-    // CR, LF, CRLF, HT, VS.
     code < 0 ||
-    // Space.
-    code === 32 ||
-    // Left paren.
-    code === 40 ||
-    // Asterisk.
-    code === 42 ||
-    // Underscore.
-    code === 95 ||
-    // Tilde.
-    code === 126
+    code === 32 /* ` ` */ ||
+    code === 40 /* `(` */ ||
+    code === 42 /* `*` */ ||
+    code === 95 /* `_` */ ||
+    code === 126 /* `~` */
   )
+}
+
+function previousHttp(code) {
+  return code === null || !asciiAlpha(code)
+}
+
+function previousEmail(code) {
+  return code !== 47 /* `/` */ && previousHttp(code)
+}
+
+function previous(events) {
+  var index = events.length
+
+  while (index--) {
+    if (
+      (events[index][1].type === 'labelLink' ||
+        events[index][1].type === 'labelImage') &&
+      !events[index][1]._balanced
+    ) {
+      return true
+    }
+  }
 }
 
 
@@ -14501,9 +15179,12 @@ function resolveTable(events, context) {
 
     if (
       events[index][0] === 'exit' &&
-      (token.type === 'tableCellDivider' || token.type === 'tableRow') &&
       cellStart &&
-      cellStart + 1 < index
+      cellStart + 1 < index &&
+      (token.type === 'tableCellDivider' ||
+        (token.type === 'tableRow' &&
+          (cellStart + 3 < index ||
+            events[cellStart][1].type !== 'whitespace')))
     ) {
       cell = {
         type: inDelimiterRow
@@ -15136,9 +15817,14 @@ function create(options) {
 /***/ 3847:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-var check = __nccwpck_require__(1028)
+"use strict";
 
-module.exports = check(/[A-Za-z]/)
+
+var regexCheck = __nccwpck_require__(1028)
+
+var asciiAlpha = regexCheck(/[A-Za-z]/)
+
+module.exports = asciiAlpha
 
 
 /***/ }),
@@ -15146,9 +15832,14 @@ module.exports = check(/[A-Za-z]/)
 /***/ 598:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-var check = __nccwpck_require__(1028)
+"use strict";
 
-module.exports = check(/[\dA-Za-z]/)
+
+var regexCheck = __nccwpck_require__(1028)
+
+var asciiAlphanumeric = regexCheck(/[\dA-Za-z]/)
+
+module.exports = asciiAlphanumeric
 
 
 /***/ }),
@@ -15156,9 +15847,14 @@ module.exports = check(/[\dA-Za-z]/)
 /***/ 245:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-var check = __nccwpck_require__(1028)
+"use strict";
 
-module.exports = check(/[#-'*+\--9=?A-Z^-~]/)
+
+var regexCheck = __nccwpck_require__(1028)
+
+var asciiAtext = regexCheck(/[#-'*+\--9=?A-Z^-~]/)
+
+module.exports = asciiAtext
 
 
 /***/ }),
@@ -15166,7 +15862,8 @@ module.exports = check(/[#-'*+\--9=?A-Z^-~]/)
 /***/ 1336:
 /***/ ((module) => {
 
-module.exports = asciiControl
+"use strict";
+
 
 // Note: EOF is seen as ASCII control here, because `null < 32 == true`.
 function asciiControl(code) {
@@ -15177,15 +15874,22 @@ function asciiControl(code) {
   )
 }
 
+module.exports = asciiControl
+
 
 /***/ }),
 
 /***/ 6996:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-var check = __nccwpck_require__(1028)
+"use strict";
 
-module.exports = check(/\d/)
+
+var regexCheck = __nccwpck_require__(1028)
+
+var asciiDigit = regexCheck(/\d/)
+
+module.exports = asciiDigit
 
 
 /***/ }),
@@ -15193,9 +15897,14 @@ module.exports = check(/\d/)
 /***/ 6526:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-var check = __nccwpck_require__(1028)
+"use strict";
 
-module.exports = check(/[\dA-Fa-f]/)
+
+var regexCheck = __nccwpck_require__(1028)
+
+var asciiHexDigit = regexCheck(/[\dA-Fa-f]/)
+
+module.exports = asciiHexDigit
 
 
 /***/ }),
@@ -15203,9 +15912,14 @@ module.exports = check(/[\dA-Fa-f]/)
 /***/ 7909:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-var check = __nccwpck_require__(1028)
+"use strict";
 
-module.exports = check(/[!-/:-@[-`{-~]/)
+
+var regexCheck = __nccwpck_require__(1028)
+
+var asciiPunctuation = regexCheck(/[!-/:-@[-`{-~]/)
+
+module.exports = asciiPunctuation
 
 
 /***/ }),
@@ -15213,11 +15927,14 @@ module.exports = check(/[!-/:-@[-`{-~]/)
 /***/ 9180:
 /***/ ((module) => {
 
-module.exports = markdownLineEndingOrSpace
+"use strict";
+
 
 function markdownLineEndingOrSpace(code) {
   return code < 0 || code === 32
 }
+
+module.exports = markdownLineEndingOrSpace
 
 
 /***/ }),
@@ -15225,11 +15942,14 @@ function markdownLineEndingOrSpace(code) {
 /***/ 7506:
 /***/ ((module) => {
 
-module.exports = markdownLineEnding
+"use strict";
+
 
 function markdownLineEnding(code) {
   return code < -2
 }
+
+module.exports = markdownLineEnding
 
 
 /***/ }),
@@ -15237,11 +15957,14 @@ function markdownLineEnding(code) {
 /***/ 5989:
 /***/ ((module) => {
 
-module.exports = markdownSpace
+"use strict";
+
 
 function markdownSpace(code) {
   return code === -2 || code === -1 || code === 32
 }
+
+module.exports = markdownSpace
 
 
 /***/ }),
@@ -15249,12 +15972,17 @@ function markdownSpace(code) {
 /***/ 9372:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-var unicodePunctuation = __nccwpck_require__(9994)
-var check = __nccwpck_require__(1028)
+"use strict";
 
-// Size note: removing ASCII from the regex and using `ascii-punctuation` here
+
+var unicodePunctuationRegex = __nccwpck_require__(9994)
+var regexCheck = __nccwpck_require__(1028)
+
 // In fact adds to the bundle size.
-module.exports = check(unicodePunctuation)
+
+var unicodePunctuation = regexCheck(unicodePunctuationRegex)
+
+module.exports = unicodePunctuation
 
 
 /***/ }),
@@ -15262,9 +15990,14 @@ module.exports = check(unicodePunctuation)
 /***/ 9968:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-var check = __nccwpck_require__(1028)
+"use strict";
 
-module.exports = check(/\s/)
+
+var regexCheck = __nccwpck_require__(1028)
+
+var unicodeWhitespace = regexCheck(/\s/)
+
+module.exports = unicodeWhitespace
 
 
 /***/ }),
@@ -15272,7 +16005,12 @@ module.exports = check(/\s/)
 /***/ 3512:
 /***/ ((module) => {
 
-module.exports = Object.assign
+"use strict";
+
+
+var assign = Object.assign
+
+module.exports = assign
 
 
 /***/ }),
@@ -15280,7 +16018,12 @@ module.exports = Object.assign
 /***/ 3531:
 /***/ ((module) => {
 
-module.exports = String.fromCharCode
+"use strict";
+
+
+var fromCharCode = String.fromCharCode
+
+module.exports = fromCharCode
 
 
 /***/ }),
@@ -15288,7 +16031,12 @@ module.exports = String.fromCharCode
 /***/ 3500:
 /***/ ((module) => {
 
-module.exports = {}.hasOwnProperty
+"use strict";
+
+
+var own = {}.hasOwnProperty
+
+module.exports = own
 
 
 /***/ }),
@@ -15296,8 +16044,11 @@ module.exports = {}.hasOwnProperty
 /***/ 5159:
 /***/ ((module) => {
 
+"use strict";
+
+
 // This module is copied from <https://spec.commonmark.org/0.29/#html-blocks>.
-module.exports = [
+var basics = [
   'address',
   'article',
   'aside',
@@ -15362,14 +16113,34 @@ module.exports = [
   'ul'
 ]
 
+module.exports = basics
+
 
 /***/ }),
 
 /***/ 4677:
 /***/ ((module) => {
 
+"use strict";
+
+
 // This module is copied from <https://spec.commonmark.org/0.29/#html-blocks>.
-module.exports = ['pre', 'script', 'style']
+var raws = ['pre', 'script', 'style', 'textarea']
+
+module.exports = raws
+
+
+/***/ }),
+
+/***/ 2366:
+/***/ ((module) => {
+
+"use strict";
+
+
+var splice = [].splice
+
+module.exports = splice
 
 
 /***/ }),
@@ -15377,13 +16148,18 @@ module.exports = ['pre', 'script', 'style']
 /***/ 9994:
 /***/ ((module) => {
 
+"use strict";
+
+
 // This module is generated by `script/`.
 //
 // CommonMark handles attention (emphasis, strong) markers based on what comes
 // before or after them.
 // One such difference is if those characters are Unicode punctuation.
 // This script is generated from the Unicode data.
-module.exports = /[!-\/:-@\[-`\{-~\xA1\xA7\xAB\xB6\xB7\xBB\xBF\u037E\u0387\u055A-\u055F\u0589\u058A\u05BE\u05C0\u05C3\u05C6\u05F3\u05F4\u0609\u060A\u060C\u060D\u061B\u061E\u061F\u066A-\u066D\u06D4\u0700-\u070D\u07F7-\u07F9\u0830-\u083E\u085E\u0964\u0965\u0970\u09FD\u0A76\u0AF0\u0C77\u0C84\u0DF4\u0E4F\u0E5A\u0E5B\u0F04-\u0F12\u0F14\u0F3A-\u0F3D\u0F85\u0FD0-\u0FD4\u0FD9\u0FDA\u104A-\u104F\u10FB\u1360-\u1368\u1400\u166E\u169B\u169C\u16EB-\u16ED\u1735\u1736\u17D4-\u17D6\u17D8-\u17DA\u1800-\u180A\u1944\u1945\u1A1E\u1A1F\u1AA0-\u1AA6\u1AA8-\u1AAD\u1B5A-\u1B60\u1BFC-\u1BFF\u1C3B-\u1C3F\u1C7E\u1C7F\u1CC0-\u1CC7\u1CD3\u2010-\u2027\u2030-\u2043\u2045-\u2051\u2053-\u205E\u207D\u207E\u208D\u208E\u2308-\u230B\u2329\u232A\u2768-\u2775\u27C5\u27C6\u27E6-\u27EF\u2983-\u2998\u29D8-\u29DB\u29FC\u29FD\u2CF9-\u2CFC\u2CFE\u2CFF\u2D70\u2E00-\u2E2E\u2E30-\u2E4F\u2E52\u3001-\u3003\u3008-\u3011\u3014-\u301F\u3030\u303D\u30A0\u30FB\uA4FE\uA4FF\uA60D-\uA60F\uA673\uA67E\uA6F2-\uA6F7\uA874-\uA877\uA8CE\uA8CF\uA8F8-\uA8FA\uA8FC\uA92E\uA92F\uA95F\uA9C1-\uA9CD\uA9DE\uA9DF\uAA5C-\uAA5F\uAADE\uAADF\uAAF0\uAAF1\uABEB\uFD3E\uFD3F\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE61\uFE63\uFE68\uFE6A\uFE6B\uFF01-\uFF03\uFF05-\uFF0A\uFF0C-\uFF0F\uFF1A\uFF1B\uFF1F\uFF20\uFF3B-\uFF3D\uFF3F\uFF5B\uFF5D\uFF5F-\uFF65]/
+var unicodePunctuation = /[!-\/:-@\[-`\{-~\xA1\xA7\xAB\xB6\xB7\xBB\xBF\u037E\u0387\u055A-\u055F\u0589\u058A\u05BE\u05C0\u05C3\u05C6\u05F3\u05F4\u0609\u060A\u060C\u060D\u061B\u061E\u061F\u066A-\u066D\u06D4\u0700-\u070D\u07F7-\u07F9\u0830-\u083E\u085E\u0964\u0965\u0970\u09FD\u0A76\u0AF0\u0C77\u0C84\u0DF4\u0E4F\u0E5A\u0E5B\u0F04-\u0F12\u0F14\u0F3A-\u0F3D\u0F85\u0FD0-\u0FD4\u0FD9\u0FDA\u104A-\u104F\u10FB\u1360-\u1368\u1400\u166E\u169B\u169C\u16EB-\u16ED\u1735\u1736\u17D4-\u17D6\u17D8-\u17DA\u1800-\u180A\u1944\u1945\u1A1E\u1A1F\u1AA0-\u1AA6\u1AA8-\u1AAD\u1B5A-\u1B60\u1BFC-\u1BFF\u1C3B-\u1C3F\u1C7E\u1C7F\u1CC0-\u1CC7\u1CD3\u2010-\u2027\u2030-\u2043\u2045-\u2051\u2053-\u205E\u207D\u207E\u208D\u208E\u2308-\u230B\u2329\u232A\u2768-\u2775\u27C5\u27C6\u27E6-\u27EF\u2983-\u2998\u29D8-\u29DB\u29FC\u29FD\u2CF9-\u2CFC\u2CFE\u2CFF\u2D70\u2E00-\u2E2E\u2E30-\u2E4F\u2E52\u3001-\u3003\u3008-\u3011\u3014-\u301F\u3030\u303D\u30A0\u30FB\uA4FE\uA4FF\uA60D-\uA60F\uA673\uA67E\uA6F2-\uA6F7\uA874-\uA877\uA8CE\uA8CF\uA8F8-\uA8FA\uA8FC\uA92E\uA92F\uA95F\uA9C1-\uA9CD\uA9DE\uA9DF\uAA5C-\uAA5F\uAADE\uAADF\uAAF0\uAAF1\uABEB\uFD3E\uFD3F\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE61\uFE63\uFE68\uFE6A\uFE6B\uFF01-\uFF03\uFF05-\uFF0A\uFF0C-\uFF0F\uFF1A\uFF1B\uFF1F\uFF20\uFF3B-\uFF3D\uFF3F\uFF5B\uFF5D\uFF5F-\uFF65]/
+
+module.exports = unicodePunctuation
 
 
 /***/ }),
@@ -15391,10 +16167,14 @@ module.exports = /[!-\/:-@\[-`\{-~\xA1\xA7\xAB\xB6\xB7\xBB\xBF\u037E\u0387\u055A
 /***/ 289:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({value: true}))
+
+var text$1 = __nccwpck_require__(7492)
 var attention = __nccwpck_require__(2116)
-var headingAtx = __nccwpck_require__(4558)
 var autolink = __nccwpck_require__(6681)
-var list = __nccwpck_require__(3107)
 var blockQuote = __nccwpck_require__(9025)
 var characterEscape = __nccwpck_require__(7128)
 var characterReference = __nccwpck_require__(9500)
@@ -15403,77 +16183,118 @@ var codeIndented = __nccwpck_require__(907)
 var codeText = __nccwpck_require__(7033)
 var definition = __nccwpck_require__(1193)
 var hardBreakEscape = __nccwpck_require__(7608)
+var headingAtx = __nccwpck_require__(4558)
 var htmlFlow = __nccwpck_require__(6791)
 var htmlText = __nccwpck_require__(7743)
 var labelEnd = __nccwpck_require__(9797)
-var labelImage = __nccwpck_require__(7860)
-var labelLink = __nccwpck_require__(5908)
+var labelStartImage = __nccwpck_require__(7860)
+var labelStartLink = __nccwpck_require__(5908)
+var lineEnding = __nccwpck_require__(5183)
+var list = __nccwpck_require__(3107)
 var setextUnderline = __nccwpck_require__(1196)
 var thematicBreak = __nccwpck_require__(5590)
-var lineEnding = __nccwpck_require__(5183)
-var resolveText = __nccwpck_require__(7492).resolver
 
-exports.document = {
-  42: list, // Asterisk
-  43: list, // Plus sign
-  45: list, // Dash
-  48: list, // 0
-  49: list, // 1
-  50: list, // 2
-  51: list, // 3
-  52: list, // 4
-  53: list, // 5
-  54: list, // 6
-  55: list, // 7
-  56: list, // 8
-  57: list, // 9
+var document = {
+  42: list,
+  // Asterisk
+  43: list,
+  // Plus sign
+  45: list,
+  // Dash
+  48: list,
+  // 0
+  49: list,
+  // 1
+  50: list,
+  // 2
+  51: list,
+  // 3
+  52: list,
+  // 4
+  53: list,
+  // 5
+  54: list,
+  // 6
+  55: list,
+  // 7
+  56: list,
+  // 8
+  57: list,
+  // 9
   62: blockQuote // Greater than
 }
-
-exports.contentInitial = {
+var contentInitial = {
   91: definition // Left square bracket
 }
-
-exports.flowInitial = {
-  '-2': codeIndented, // Horizontal tab
-  '-1': codeIndented, // Virtual space
+var flowInitial = {
+  '-2': codeIndented,
+  // Horizontal tab
+  '-1': codeIndented,
+  // Virtual space
   32: codeIndented // Space
 }
-
-exports.flow = {
-  35: headingAtx, // Number sign
-  42: thematicBreak, // Asterisk
-  45: [setextUnderline, thematicBreak], // Dash
-  60: htmlFlow, // Less than
-  61: setextUnderline, // Equals to
-  95: thematicBreak, // Underscore
-  96: codeFenced, // Grave accent
+var flow = {
+  35: headingAtx,
+  // Number sign
+  42: thematicBreak,
+  // Asterisk
+  45: [setextUnderline, thematicBreak],
+  // Dash
+  60: htmlFlow,
+  // Less than
+  61: setextUnderline,
+  // Equals to
+  95: thematicBreak,
+  // Underscore
+  96: codeFenced,
+  // Grave accent
   126: codeFenced // Tilde
 }
-
-exports.string = {
-  38: characterReference, // Ampersand
+var string = {
+  38: characterReference,
+  // Ampersand
   92: characterEscape // Backslash
 }
-
-exports.text = {
-  '-5': lineEnding, // Carriage return
-  '-4': lineEnding, // Line feed
-  '-3': lineEnding, // Carriage return + line feed
-  33: labelImage, // Exclamation mark
-  38: characterReference, // Ampersand
-  42: attention, // Asterisk
-  60: [autolink, htmlText], // Less than
-  91: labelLink, // Left square bracket
-  92: [hardBreakEscape, characterEscape], // Backslash
-  93: labelEnd, // Right square bracket
-  95: attention, // Underscore
+var text = {
+  '-5': lineEnding,
+  // Carriage return
+  '-4': lineEnding,
+  // Line feed
+  '-3': lineEnding,
+  // Carriage return + line feed
+  33: labelStartImage,
+  // Exclamation mark
+  38: characterReference,
+  // Ampersand
+  42: attention,
+  // Asterisk
+  60: [autolink, htmlText],
+  // Less than
+  91: labelStartLink,
+  // Left square bracket
+  92: [hardBreakEscape, characterEscape],
+  // Backslash
+  93: labelEnd,
+  // Right square bracket
+  95: attention,
+  // Underscore
   96: codeText // Grave accent
 }
-
-exports.insideSpan = {
-  null: [attention, resolveText]
+var insideSpan = {
+  null: [attention, text$1.resolver]
 }
+var disable = {
+  null: []
+}
+
+exports.contentInitial = contentInitial
+exports.disable = disable
+exports.document = document
+exports.flow = flow
+exports.flowInitial = flowInitial
+exports.insideSpan = insideSpan
+exports.string = string
+exports.text = text
 
 
 /***/ }),
@@ -15481,11 +16302,15 @@ exports.insideSpan = {
 /***/ 5834:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
-exports.tokenize = initializeContent
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({value: true}))
 
 var markdownLineEnding = __nccwpck_require__(7506)
+var factorySpace = __nccwpck_require__(8200)
 
-var createSpace = __nccwpck_require__(8200)
+var tokenize = initializeContent
 
 function initializeContent(effects) {
   var contentStart = effects.attempt(
@@ -15493,9 +16318,7 @@ function initializeContent(effects) {
     afterContentStartConstruct,
     paragraphInitial
   )
-
   var previous
-
   return contentStart
 
   function afterContentStartConstruct(code) {
@@ -15507,7 +16330,7 @@ function initializeContent(effects) {
     effects.enter('lineEnding')
     effects.consume(code)
     effects.exit('lineEnding')
-    return createSpace(effects, contentStart, 'linePrefix')
+    return factorySpace(effects, contentStart, 'linePrefix')
   }
 
   function paragraphInitial(code) {
@@ -15526,7 +16349,6 @@ function initializeContent(effects) {
     }
 
     previous = token
-
     return data(code)
   }
 
@@ -15542,13 +16364,14 @@ function initializeContent(effects) {
       effects.consume(code)
       effects.exit('chunkText')
       return lineStart
-    }
+    } // Data.
 
-    // Data.
     effects.consume(code)
     return data
   }
 }
+
+exports.tokenize = tokenize
 
 
 /***/ }),
@@ -15556,24 +16379,34 @@ function initializeContent(effects) {
 /***/ 9517:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
-exports.tokenize = initializeDocument
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({value: true}))
 
 var markdownLineEnding = __nccwpck_require__(7506)
+var factorySpace = __nccwpck_require__(8200)
+var partialBlankLine = __nccwpck_require__(2244)
 
-var createSpace = __nccwpck_require__(8200)
-var blank = __nccwpck_require__(2244)
-
-var container = {tokenize: tokenizeContainer}
-var lazyFlow = {tokenize: tokenizeLazyFlow}
+var tokenize = initializeDocument
+var containerConstruct = {
+  tokenize: tokenizeContainer
+}
+var lazyFlowConstruct = {
+  tokenize: tokenizeLazyFlow
+}
 
 function initializeDocument(effects) {
   var self = this
   var stack = []
   var continued = 0
+  var inspectConstruct = {
+    tokenize: tokenizeInspect,
+    partial: true
+  }
   var inspectResult
   var childFlow
   var childToken
-
   return start
 
   function start(code) {
@@ -15606,7 +16439,11 @@ function initializeDocument(effects) {
       childFlow.currentConstruct &&
       childFlow.currentConstruct.interruptible
     self.containerState = {}
-    return effects.attempt(container, containerContinue, flowStart)(code)
+    return effects.attempt(
+      containerConstruct,
+      containerContinue,
+      flowStart
+    )(code)
   }
 
   function containerContinue(code) {
@@ -15623,13 +16460,11 @@ function initializeDocument(effects) {
     }
 
     childFlow = childFlow || self.parser.flow(self.now())
-
     effects.enter('chunkFlow', {
       contentType: 'flow',
       previous: childToken,
       _tokenizer: childFlow
     })
-
     return flowContinue(code)
   }
 
@@ -15642,10 +16477,7 @@ function initializeDocument(effects) {
     if (markdownLineEnding(code)) {
       effects.consume(code)
       continueFlow(effects.exit('chunkFlow'))
-      return effects.check(
-        {tokenize: tokenizeInspect, partial: true},
-        documentAfterPeek
-      )
+      return effects.check(inspectConstruct, documentAfterPeek)
     }
 
     effects.consume(code)
@@ -15657,7 +16489,6 @@ function initializeDocument(effects) {
       inspectResult.continued,
       inspectResult && inspectResult.flowEnd
     )
-
     continued = 0
     return start(code)
   }
@@ -15671,15 +16502,13 @@ function initializeDocument(effects) {
   }
 
   function exitContainers(size, end) {
-    var index = stack.length
+    var index = stack.length // Close the flow.
 
-    // Close the flow.
     if (childFlow && end) {
       childFlow.write([null])
       childToken = childFlow = undefined
-    }
+    } // Exit open containers.
 
-    // Exit open containers.
     while (index-- > size) {
       self.containerState = stack[index][1]
       stack[index][0].exit.call(self, effects)
@@ -15690,9 +16519,7 @@ function initializeDocument(effects) {
 
   function tokenizeInspect(effects, ok) {
     var subcontinued = 0
-
     inspectResult = {}
-
     return inspectStart
 
     function inspectStart(code) {
@@ -15703,10 +16530,9 @@ function initializeDocument(effects) {
           inspectContinue,
           inspectLess
         )(code)
-      }
-
-      // If we’re continued but in a concrete flow, we can’t have more
+      } // If we’re continued but in a concrete flow, we can’t have more
       // containers.
+
       if (childFlow.currentConstruct && childFlow.currentConstruct.concrete) {
         inspectResult.flowContinue = true
         return inspectDone(code)
@@ -15715,7 +16541,11 @@ function initializeDocument(effects) {
       self.interrupt =
         childFlow.currentConstruct && childFlow.currentConstruct.interruptible
       self.containerState = {}
-      return effects.attempt(container, inspectFlowEnd, inspectDone)(code)
+      return effects.attempt(
+        containerConstruct,
+        inspectFlowEnd,
+        inspectDone
+      )(code)
     }
 
     function inspectContinue(code) {
@@ -15730,18 +16560,16 @@ function initializeDocument(effects) {
         // Maybe another container?
         self.containerState = {}
         return effects.attempt(
-          container,
-          inspectFlowEnd,
-          // Maybe flow, or a blank line?
+          containerConstruct,
+          inspectFlowEnd, // Maybe flow, or a blank line?
           effects.attempt(
-            lazyFlow,
+            lazyFlowConstruct,
             inspectFlowEnd,
-            effects.check(blank, inspectFlowEnd, inspectLazy)
+            effects.check(partialBlankLine, inspectFlowEnd, inspectLazy)
           )
         )(code)
-      }
+      } // Otherwise we’re interrupting.
 
-      // Otherwise we’re interrupting.
       return inspectFlowEnd(code)
     }
 
@@ -15751,9 +16579,8 @@ function initializeDocument(effects) {
       inspectResult.lazy = true
       inspectResult.flowContinue = true
       return inspectDone(code)
-    }
+    } // We’re done with flow if we have more containers, or an interruption.
 
-    // We’re done with flow if we have more containers, or an interruption.
     function inspectFlowEnd(code) {
       inspectResult.flowEnd = true
       return inspectDone(code)
@@ -15768,22 +16595,28 @@ function initializeDocument(effects) {
 }
 
 function tokenizeContainer(effects, ok, nok) {
-  return createSpace(
+  return factorySpace(
     effects,
     effects.attempt(this.parser.constructs.document, ok, nok),
     'linePrefix',
-    4
+    this.parser.constructs.disable.null.indexOf('codeIndented') > -1
+      ? undefined
+      : 4
   )
 }
 
 function tokenizeLazyFlow(effects, ok, nok) {
-  return createSpace(
+  return factorySpace(
     effects,
     effects.lazy(this.parser.constructs.flow, ok, nok),
     'linePrefix',
-    4
+    this.parser.constructs.disable.null.indexOf('codeIndented') > -1
+      ? undefined
+      : 4
   )
 }
+
+exports.tokenize = tokenize
 
 
 /***/ }),
@@ -15791,25 +16624,27 @@ function tokenizeLazyFlow(effects, ok, nok) {
 /***/ 9670:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
-exports.tokenize = initializeFlow
+"use strict";
 
-var markdownLineEnding = __nccwpck_require__(7506)
 
-var createSpace = __nccwpck_require__(8200)
-var blank = __nccwpck_require__(2244)
+Object.defineProperty(exports, "__esModule", ({value: true}))
+
 var content = __nccwpck_require__(1259)
+var factorySpace = __nccwpck_require__(8200)
+var partialBlankLine = __nccwpck_require__(2244)
+
+var tokenize = initializeFlow
 
 function initializeFlow(effects) {
   var self = this
   var initial = effects.attempt(
     // Try to parse a blank line.
-    blank,
-    atBlankEnding,
-    // Try to parse initial flow (essentially, only code).
+    partialBlankLine,
+    atBlankEnding, // Try to parse initial flow (essentially, only code).
     effects.attempt(
       this.parser.constructs.flowInitial,
       afterConstruct,
-      createSpace(
+      factorySpace(
         effects,
         effects.attempt(
           this.parser.constructs.flow,
@@ -15820,7 +16655,6 @@ function initializeFlow(effects) {
       )
     )
   )
-
   return initial
 
   function atBlankEnding(code) {
@@ -15850,31 +16684,40 @@ function initializeFlow(effects) {
   }
 }
 
+exports.tokenize = tokenize
+
 
 /***/ }),
 
 /***/ 7492:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
-exports.text = initializeFactory('text')
-exports.string = initializeFactory('string')
-exports.resolver = {resolveAll: resolver()}
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", ({value: true}))
 
 var assign = __nccwpck_require__(3512)
-
 var shallow = __nccwpck_require__(1479)
+
+var text = initializeFactory('text')
+var string = initializeFactory('string')
+var resolver = {
+  resolveAll: createResolver()
+}
 
 function initializeFactory(field) {
   return {
     tokenize: initializeText,
-    resolveAll: resolver(field === 'text' ? resolveAllLineSuffixes : undefined)
+    resolveAll: createResolver(
+      field === 'text' ? resolveAllLineSuffixes : undefined
+    )
   }
 
   function initializeText(effects) {
     var self = this
     var constructs = this.parser.constructs[field]
     var text = effects.attempt(constructs, start, notText)
-
     return start
 
     function start(code) {
@@ -15896,9 +16739,8 @@ function initializeFactory(field) {
       if (atBreak(code)) {
         effects.exit('data')
         return text(code)
-      }
+      } // Data.
 
-      // Data.
       effects.consume(code)
       return data
     }
@@ -15925,15 +16767,14 @@ function initializeFactory(field) {
   }
 }
 
-function resolver(extraResolver) {
+function createResolver(extraResolver) {
   return resolveAllText
 
   function resolveAllText(events, context) {
     var index = -1
-    var enter
-
-    // A rather boring computation (to merge adjacent `data` events) which
+    var enter // A rather boring computation (to merge adjacent `data` events) which
     // improves mm performance by 29%.
+
     while (++index <= events.length) {
       if (enter === undefined) {
         if (events[index] && events[index][1].type === 'data') {
@@ -15954,15 +16795,14 @@ function resolver(extraResolver) {
 
     return extraResolver ? extraResolver(events, context) : events
   }
-}
-
-// A rather ugly set of instructions which again looks at chunks in the input
+} // A rather ugly set of instructions which again looks at chunks in the input
 // stream.
 // The reason to do this here is that it is *much* faster to parse in reverse.
 // And that we can’t hook into `null` to split the line suffix before an EOF.
 // To do: figure out if we can make this into a clean utility, or even in core.
 // As it will be useful for GFMs literal autolink extension (and maybe even
 // tables?)
+
 function resolveAllLineSuffixes(events, context) {
   var eventIndex = -1
   var chunks
@@ -16000,14 +16840,12 @@ function resolveAllLineSuffixes(events, context) {
 
           if (bufferIndex) break
           bufferIndex = -1
-        }
-        // Number
+        } // Number
         else if (chunk === -2) {
           tabs = true
           size++
-        } else if (chunk === -1) {
-          // Empty
-        } else {
+        } else if (chunk === -1);
+        else {
           // Replacement character, exit.
           index++
           break
@@ -16020,7 +16858,6 @@ function resolveAllLineSuffixes(events, context) {
             eventIndex === events.length || tabs || size < 2
               ? 'lineSuffix'
               : 'hardBreakTrailing',
-
           start: {
             line: data.end.line,
             column: data.end.column - size,
@@ -16030,10 +16867,8 @@ function resolveAllLineSuffixes(events, context) {
               ? bufferIndex
               : data.start._bufferIndex + bufferIndex
           },
-
           end: shallow(data.end)
         }
-
         data.end = shallow(token.start)
 
         if (data.start.offset === data.end.offset) {
@@ -16045,7 +16880,6 @@ function resolveAllLineSuffixes(events, context) {
             ['enter', token, context],
             ['exit', token, context]
           )
-
           eventIndex += 2
         }
       }
@@ -16057,47 +16891,53 @@ function resolveAllLineSuffixes(events, context) {
   return events
 }
 
+exports.resolver = resolver
+exports.string = string
+exports.text = text
+
 
 /***/ }),
 
 /***/ 488:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = createParser
+"use strict";
 
-var initializeContent = __nccwpck_require__(5834)
-var initializeDocument = __nccwpck_require__(9517)
-var initializeFlow = __nccwpck_require__(9670)
-var initializeText = __nccwpck_require__(7492)
-var constructs = __nccwpck_require__(289)
-var createTokenizer = __nccwpck_require__(4845)
+
+var content = __nccwpck_require__(5834)
+var document = __nccwpck_require__(9517)
+var flow = __nccwpck_require__(9670)
+var text = __nccwpck_require__(7492)
 var combineExtensions = __nccwpck_require__(8602)
+var createTokenizer = __nccwpck_require__(4845)
 var miniflat = __nccwpck_require__(9042)
+var constructs = __nccwpck_require__(289)
 
-function createParser(options) {
+function parse(options) {
   var settings = options || {}
   var parser = {
     defined: [],
     constructs: combineExtensions(
       [constructs].concat(miniflat(settings.extensions))
     ),
-
-    content: create(initializeContent),
-    document: create(initializeDocument),
-    flow: create(initializeFlow),
-    string: create(initializeText.string),
-    text: create(initializeText.text)
+    content: create(content),
+    document: create(document),
+    flow: create(flow),
+    string: create(text.string),
+    text: create(text.text)
   }
-
   return parser
 
   function create(initializer) {
     return creator
+
     function creator(from) {
       return createTokenizer(parser, initializer, from)
     }
   }
 }
+
+module.exports = parse
 
 
 /***/ }),
@@ -16105,7 +16945,8 @@ function createParser(options) {
 /***/ 6948:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = postprocess
+"use strict";
+
 
 var subtokenize = __nccwpck_require__(14)
 
@@ -16117,32 +16958,33 @@ function postprocess(events) {
   return events
 }
 
+module.exports = postprocess
+
 
 /***/ }),
 
 /***/ 5603:
 /***/ ((module) => {
 
-module.exports = preprocessor
+"use strict";
+
 
 var search = /[\0\t\n\r]/g
 
-function preprocessor() {
+function preprocess() {
   var start = true
   var column = 1
   var buffer = ''
   var atCarriageReturn
+  return preprocessor
 
-  return preprocess
-
-  function preprocess(value, encoding, end) {
+  function preprocessor(value, encoding, end) {
     var chunks = []
     var match
     var next
     var startPosition
     var endPosition
     var code
-
     value = buffer + value.toString(encoding)
     startPosition = 0
     buffer = ''
@@ -16186,12 +17028,12 @@ function preprocessor() {
         } else if (code === 9) {
           next = Math.ceil(column / 4) * 4
           chunks.push(-2)
+
           while (column++ < next) chunks.push(-1)
         } else if (code === 10) {
           chunks.push(-4)
           column = 1
-        }
-        // Must be carriage return.
+        } // Must be carriage return.
         else {
           atCarriageReturn = true
           column = 1
@@ -16211,22 +17053,30 @@ function preprocessor() {
   }
 }
 
+module.exports = preprocess
+
 
 /***/ }),
 
 /***/ 2116:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeAttention
-exports.resolveAll = resolveAllAttention
+"use strict";
 
-var shallow = __nccwpck_require__(1479)
+
+var chunkedPush = __nccwpck_require__(4455)
 var chunkedSplice = __nccwpck_require__(778)
 var classifyCharacter = __nccwpck_require__(1324)
 var movePoint = __nccwpck_require__(6985)
 var resolveAll = __nccwpck_require__(2004)
+var shallow = __nccwpck_require__(1479)
 
-// Take all events and resolve attention to emphasis or strong.
+var attention = {
+  name: 'attention',
+  tokenize: tokenizeAttention,
+  resolveAll: resolveAllAttention
+}
+
 function resolveAllAttention(events, context) {
   var index = -1
   var open
@@ -16236,12 +17086,11 @@ function resolveAllAttention(events, context) {
   var closingSequence
   var use
   var nextEvents
-  var offset
-
-  // Walk through all events.
+  var offset // Walk through all events.
   //
   // Note: performance of this is fine on an mb of normal markdown, but it’s
   // a bottleneck for malicious stuff.
+
   while (++index < events.length) {
     // Find a token that can close.
     if (
@@ -16249,16 +17098,14 @@ function resolveAllAttention(events, context) {
       events[index][1].type === 'attentionSequence' &&
       events[index][1]._close
     ) {
-      open = index
+      open = index // Now walk back to find an opener.
 
-      // Now walk back to find an opener.
       while (open--) {
         // Find a token that can open the closer.
         if (
           events[open][0] === 'exit' &&
           events[open][1].type === 'attentionSequence' &&
-          events[open][1]._open &&
-          // If the markers are the same:
+          events[open][1]._open && // If the markers are the same:
           context.sliceSerialize(events[open][1]).charCodeAt(0) ===
             context.sliceSerialize(events[index][1]).charCodeAt(0)
         ) {
@@ -16278,84 +17125,70 @@ function resolveAllAttention(events, context) {
             )
           ) {
             continue
-          }
+          } // Number of markers to use from the sequence.
 
-          // Number of markers to use from the sequence.
           use =
             events[open][1].end.offset - events[open][1].start.offset > 1 &&
             events[index][1].end.offset - events[index][1].start.offset > 1
               ? 2
               : 1
-
           openingSequence = {
             type: use > 1 ? 'strongSequence' : 'emphasisSequence',
             start: movePoint(shallow(events[open][1].end), -use),
             end: shallow(events[open][1].end)
           }
-
           closingSequence = {
             type: use > 1 ? 'strongSequence' : 'emphasisSequence',
             start: shallow(events[index][1].start),
             end: movePoint(shallow(events[index][1].start), use)
           }
-
           text = {
             type: use > 1 ? 'strongText' : 'emphasisText',
             start: shallow(events[open][1].end),
             end: shallow(events[index][1].start)
           }
-
           group = {
             type: use > 1 ? 'strong' : 'emphasis',
             start: shallow(openingSequence.start),
             end: shallow(closingSequence.end)
           }
-
           events[open][1].end = shallow(openingSequence.start)
           events[index][1].start = shallow(closingSequence.end)
+          nextEvents = [] // If there are more markers in the opening, add them before.
 
-          nextEvents = []
-
-          // If there are more markers in the opening, add them before.
           if (events[open][1].end.offset - events[open][1].start.offset) {
-            chunkedSplice(nextEvents, nextEvents.length, 0, [
+            nextEvents = chunkedPush(nextEvents, [
               ['enter', events[open][1], context],
               ['exit', events[open][1], context]
             ])
-          }
+          } // Opening.
 
-          // Opening.
-          chunkedSplice(nextEvents, nextEvents.length, 0, [
+          nextEvents = chunkedPush(nextEvents, [
             ['enter', group, context],
             ['enter', openingSequence, context],
             ['exit', openingSequence, context],
             ['enter', text, context]
-          ])
+          ]) // Between.
 
-          // Between.
-          chunkedSplice(
+          nextEvents = chunkedPush(
             nextEvents,
-            nextEvents.length,
-            0,
             resolveAll(
               context.parser.constructs.insideSpan.null,
               events.slice(open + 1, index),
               context
             )
-          )
+          ) // Closing.
 
-          // Closing.
-          chunkedSplice(nextEvents, nextEvents.length, 0, [
+          nextEvents = chunkedPush(nextEvents, [
             ['exit', text, context],
             ['enter', closingSequence, context],
             ['exit', closingSequence, context],
             ['exit', group, context]
-          ])
+          ]) // If there are more markers in the closing, add them after.
 
-          // If there are more markers in the closing, add them after.
           if (events[index][1].end.offset - events[index][1].start.offset) {
             offset = 2
-            chunkedSplice(nextEvents, nextEvents.length, 0, [
+            nextEvents = chunkedPush(nextEvents, [
               ['enter', events[index][1], context],
               ['exit', events[index][1], context]
             ])
@@ -16364,15 +17197,13 @@ function resolveAllAttention(events, context) {
           }
 
           chunkedSplice(events, open - 1, index - open + 3, nextEvents)
-
           index = open + nextEvents.length - offset - 2
           break
         }
       }
     }
-  }
+  } // Remove remaining sequences.
 
-  // Remove remaining sequences.
   index = -1
 
   while (++index < events.length) {
@@ -16387,7 +17218,6 @@ function resolveAllAttention(events, context) {
 function tokenizeAttention(effects, ok) {
   var before = classifyCharacter(this.previous)
   var marker
-
   return start
 
   function start(code) {
@@ -16417,22 +17247,29 @@ function tokenizeAttention(effects, ok) {
   }
 }
 
+module.exports = attention
+
 
 /***/ }),
 
 /***/ 6681:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeAutolink
+"use strict";
+
 
 var asciiAlpha = __nccwpck_require__(3847)
 var asciiAlphanumeric = __nccwpck_require__(598)
 var asciiAtext = __nccwpck_require__(245)
 var asciiControl = __nccwpck_require__(1336)
 
-function tokenizeAutolink(effects, ok, nok) {
-  var size
+var autolink = {
+  name: 'autolink',
+  tokenize: tokenizeAutolink
+}
 
+function tokenizeAutolink(effects, ok, nok) {
+  var size = 1
   return start
 
   function start(code) {
@@ -16447,7 +17284,6 @@ function tokenizeAutolink(effects, ok, nok) {
   function open(code) {
     if (asciiAlpha(code)) {
       effects.consume(code)
-      size = 1
       return schemeOrEmailAtext
     }
 
@@ -16544,29 +17380,39 @@ function tokenizeAutolink(effects, ok, nok) {
   }
 }
 
+module.exports = autolink
+
 
 /***/ }),
 
 /***/ 9025:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeBlockQuoteStart
-exports.continuation = {tokenize: tokenizeBlockQuoteContinuation}
-exports.exit = exit
+"use strict";
+
 
 var markdownSpace = __nccwpck_require__(5989)
+var factorySpace = __nccwpck_require__(8200)
 
-var createSpace = __nccwpck_require__(8200)
+var blockQuote = {
+  name: 'blockQuote',
+  tokenize: tokenizeBlockQuoteStart,
+  continuation: {
+    tokenize: tokenizeBlockQuoteContinuation
+  },
+  exit: exit
+}
 
 function tokenizeBlockQuoteStart(effects, ok, nok) {
   var self = this
-
   return start
 
   function start(code) {
     if (code === 62) {
       if (!self.containerState.open) {
-        effects.enter('blockQuote', {_container: true})
+        effects.enter('blockQuote', {
+          _container: true
+        })
         self.containerState.open = true
       }
 
@@ -16595,11 +17441,13 @@ function tokenizeBlockQuoteStart(effects, ok, nok) {
 }
 
 function tokenizeBlockQuoteContinuation(effects, ok, nok) {
-  return createSpace(
+  return factorySpace(
     effects,
-    effects.attempt(exports, ok, nok),
+    effects.attempt(blockQuote, ok, nok),
     'linePrefix',
-    4
+    this.parser.constructs.disable.null.indexOf('codeIndented') > -1
+      ? undefined
+      : 4
   )
 }
 
@@ -16607,15 +17455,23 @@ function exit(effects) {
   effects.exit('blockQuote')
 }
 
+module.exports = blockQuote
+
 
 /***/ }),
 
 /***/ 7128:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeCharacterEscape
+"use strict";
+
 
 var asciiPunctuation = __nccwpck_require__(7909)
+
+var characterEscape = {
+  name: 'characterEscape',
+  tokenize: tokenizeCharacterEscape
+}
 
 function tokenizeCharacterEscape(effects, ok, nok) {
   return start
@@ -16641,25 +17497,38 @@ function tokenizeCharacterEscape(effects, ok, nok) {
   }
 }
 
+module.exports = characterEscape
+
 
 /***/ }),
 
 /***/ 9500:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeCharacterReference
+"use strict";
 
-var decode = __nccwpck_require__(3485)
+
+var decodeEntity = __nccwpck_require__(3485)
 var asciiAlphanumeric = __nccwpck_require__(598)
 var asciiDigit = __nccwpck_require__(6996)
 var asciiHexDigit = __nccwpck_require__(6526)
+
+function _interopDefaultLegacy(e) {
+  return e && typeof e === 'object' && 'default' in e ? e : {default: e}
+}
+
+var decodeEntity__default = /*#__PURE__*/ _interopDefaultLegacy(decodeEntity)
+
+var characterReference = {
+  name: 'characterReference',
+  tokenize: tokenizeCharacterReference
+}
 
 function tokenizeCharacterReference(effects, ok, nok) {
   var self = this
   var size = 0
   var max
   var test
-
   return start
 
   function start(code) {
@@ -16707,7 +17576,10 @@ function tokenizeCharacterReference(effects, ok, nok) {
     if (code === 59 && size) {
       token = effects.exit('characterReferenceValue')
 
-      if (test === asciiAlphanumeric && !decode(self.sliceSerialize(token))) {
+      if (
+        test === asciiAlphanumeric &&
+        !decodeEntity__default['default'](self.sliceSerialize(token))
+      ) {
         return nok(code)
       }
 
@@ -16727,27 +17599,37 @@ function tokenizeCharacterReference(effects, ok, nok) {
   }
 }
 
+module.exports = characterReference
+
 
 /***/ }),
 
 /***/ 3268:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeCodeFenced
-exports.concrete = true
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
 var markdownLineEndingOrSpace = __nccwpck_require__(9180)
-
 var prefixSize = __nccwpck_require__(3722)
-var createSpace = __nccwpck_require__(8200)
+var factorySpace = __nccwpck_require__(8200)
+
+var codeFenced = {
+  name: 'codeFenced',
+  tokenize: tokenizeCodeFenced,
+  concrete: true
+}
 
 function tokenizeCodeFenced(effects, ok, nok) {
   var self = this
+  var closingFenceConstruct = {
+    tokenize: tokenizeClosingFence,
+    partial: true
+  }
   var initialPrefix = prefixSize(this.events, 'linePrefix')
   var sizeOpen = 0
   var marker
-
   return start
 
   function start(code) {
@@ -16768,7 +17650,7 @@ function tokenizeCodeFenced(effects, ok, nok) {
     effects.exit('codeFencedFenceSequence')
     return sizeOpen < 3
       ? nok(code)
-      : createSpace(effects, infoOpen, 'whitespace')(code)
+      : factorySpace(effects, infoOpen, 'whitespace')(code)
   }
 
   function infoOpen(code) {
@@ -16777,7 +17659,9 @@ function tokenizeCodeFenced(effects, ok, nok) {
     }
 
     effects.enter('codeFencedFenceInfo')
-    effects.enter('chunkString', {contentType: 'string'})
+    effects.enter('chunkString', {
+      contentType: 'string'
+    })
     return info(code)
   }
 
@@ -16785,7 +17669,7 @@ function tokenizeCodeFenced(effects, ok, nok) {
     if (code === null || markdownLineEndingOrSpace(code)) {
       effects.exit('chunkString')
       effects.exit('codeFencedFenceInfo')
-      return createSpace(effects, infoAfter, 'whitespace')(code)
+      return factorySpace(effects, infoAfter, 'whitespace')(code)
     }
 
     if (code === 96 && code === marker) return nok(code)
@@ -16799,7 +17683,9 @@ function tokenizeCodeFenced(effects, ok, nok) {
     }
 
     effects.enter('codeFencedFenceMeta')
-    effects.enter('chunkString', {contentType: 'string'})
+    effects.enter('chunkString', {
+      contentType: 'string'
+    })
     return meta(code)
   }
 
@@ -16830,10 +17716,10 @@ function tokenizeCodeFenced(effects, ok, nok) {
       effects.consume(code)
       effects.exit('lineEnding')
       return effects.attempt(
-        {tokenize: tokenizeClosingFence, partial: true},
+        closingFenceConstruct,
         after,
         initialPrefix
-          ? createSpace(effects, content, 'linePrefix', initialPrefix + 1)
+          ? factorySpace(effects, content, 'linePrefix', initialPrefix + 1)
           : content
       )
     }
@@ -16859,10 +17745,16 @@ function tokenizeCodeFenced(effects, ok, nok) {
 
   function tokenizeClosingFence(effects, ok, nok) {
     var size = 0
+    return factorySpace(
+      effects,
+      closingSequenceStart,
+      'linePrefix',
+      this.parser.constructs.disable.null.indexOf('codeIndented') > -1
+        ? undefined
+        : 4
+    )
 
-    return createSpace(effects, closingPrefixAfter, 'linePrefix', 4)
-
-    function closingPrefixAfter(code) {
+    function closingSequenceStart(code) {
       effects.enter('codeFencedFence')
       effects.enter('codeFencedFenceSequence')
       return closingSequence(code)
@@ -16877,7 +17769,7 @@ function tokenizeCodeFenced(effects, ok, nok) {
 
       if (size < sizeOpen) return nok(code)
       effects.exit('codeFencedFenceSequence')
-      return createSpace(effects, closingSequenceEnd, 'whitespace')(code)
+      return factorySpace(effects, closingSequenceEnd, 'whitespace')(code)
     }
 
     function closingSequenceEnd(code) {
@@ -16891,22 +17783,31 @@ function tokenizeCodeFenced(effects, ok, nok) {
   }
 }
 
+module.exports = codeFenced
+
 
 /***/ }),
 
 /***/ 907:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeCodeIndented
-exports.resolve = resolveCodeIndented
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
-
 var chunkedSplice = __nccwpck_require__(778)
 var prefixSize = __nccwpck_require__(3722)
-var createSpace = __nccwpck_require__(8200)
+var factorySpace = __nccwpck_require__(8200)
 
-var continuedIndent = {tokenize: tokenizeContinuedIndent, partial: true}
+var codeIndented = {
+  name: 'codeIndented',
+  tokenize: tokenizeCodeIndented,
+  resolve: resolveCodeIndented
+}
+var indentedContentConstruct = {
+  tokenize: tokenizeIndentedContent,
+  partial: true
+}
 
 function resolveCodeIndented(events, context) {
   var code = {
@@ -16914,34 +17815,13 @@ function resolveCodeIndented(events, context) {
     start: events[0][1].start,
     end: events[events.length - 1][1].end
   }
-
   chunkedSplice(events, 0, 0, [['enter', code, context]])
   chunkedSplice(events, events.length, 0, [['exit', code, context]])
-
   return events
 }
 
 function tokenizeCodeIndented(effects, ok, nok) {
-  var self = this
-
-  return createSpace(
-    effects,
-    afterInitial,
-    'linePrefix',
-
-    4 + 1
-  )
-
-  function afterInitial(code) {
-    // Flow checks blank lines first, so we don’t have EOL/EOF.
-
-    if (prefixSize(self.events, 'linePrefix') < 4) {
-      return nok(code)
-    }
-
-    effects.enter('codeFlowValue')
-    return content(code)
-  }
+  return effects.attempt(indentedContentConstruct, afterPrefix, nok)
 
   function afterPrefix(code) {
     if (code === null) {
@@ -16949,7 +17829,7 @@ function tokenizeCodeIndented(effects, ok, nok) {
     }
 
     if (markdownLineEnding(code)) {
-      return effects.attempt(continuedIndent, afterPrefix, ok)(code)
+      return effects.attempt(indentedContentConstruct, afterPrefix, ok)(code)
     }
 
     effects.enter('codeFlowValue')
@@ -16967,78 +17847,68 @@ function tokenizeCodeIndented(effects, ok, nok) {
   }
 }
 
-function tokenizeContinuedIndent(effects, ok, nok) {
+function tokenizeIndentedContent(effects, ok, nok) {
   var self = this
-
-  return createSpace(
-    effects,
-    afterPrefix,
-    'linePrefix',
-
-    4 + 1
-  )
+  return factorySpace(effects, afterPrefix, 'linePrefix', 4 + 1)
 
   function afterPrefix(code) {
     if (markdownLineEnding(code)) {
       effects.enter('lineEnding')
       effects.consume(code)
       effects.exit('lineEnding')
-
-      return createSpace(
-        effects,
-        afterPrefix,
-        'linePrefix',
-
-        4 + 1
-      )
+      return factorySpace(effects, afterPrefix, 'linePrefix', 4 + 1)
     }
 
     return prefixSize(self.events, 'linePrefix') < 4 ? nok(code) : ok(code)
   }
 }
 
+module.exports = codeIndented
+
 
 /***/ }),
 
 /***/ 7033:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeCodeText
-exports.resolve = resolveCodeText
-exports.previous = previous
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
+
+var codeText = {
+  name: 'codeText',
+  tokenize: tokenizeCodeText,
+  resolve: resolveCodeText,
+  previous: previous
+}
 
 function resolveCodeText(events) {
   var tailExitIndex = events.length - 4
   var headEnterIndex = 3
   var index
-  var enter
+  var enter // If we start and end with an EOL or a space.
 
-  // If we start and end with an EOL or a space.
   if (
     (events[headEnterIndex][1].type === 'lineEnding' ||
       events[headEnterIndex][1].type === 'space') &&
     (events[tailExitIndex][1].type === 'lineEnding' ||
       events[tailExitIndex][1].type === 'space')
   ) {
-    index = headEnterIndex
+    index = headEnterIndex // And we have data.
 
-    // And we have data.
     while (++index < tailExitIndex) {
       if (events[index][1].type === 'codeTextData') {
         // Then we have padding.
         events[tailExitIndex][1].type = events[headEnterIndex][1].type =
           'codeTextPadding'
-
         headEnterIndex += 2
         tailExitIndex -= 2
         break
       }
     }
-  }
+  } // Merge adjacent spaces and data.
 
-  // Merge adjacent spaces and data.
   index = headEnterIndex - 1
   tailExitIndex++
 
@@ -17076,11 +17946,9 @@ function previous(code) {
 }
 
 function tokenizeCodeText(effects, ok, nok) {
-  var self = this
   var sizeOpen = 0
   var size
   var token
-
   return start
 
   function start(code) {
@@ -17104,17 +17972,15 @@ function tokenizeCodeText(effects, ok, nok) {
     // EOF.
     if (code === null) {
       return nok(code)
-    }
-
-    // Closing fence?
+    } // Closing fence?
     // Could also be data.
+
     if (code === 96) {
       token = effects.enter('codeTextSequence')
       size = 0
       return closingSequence(code)
-    }
+    } // Tabs don’t work, and virtual spaces don’t make sense.
 
-    // Tabs don’t work, and virtual spaces don’t make sense.
     if (code === 32) {
       effects.enter('space')
       effects.consume(code)
@@ -17127,14 +17993,12 @@ function tokenizeCodeText(effects, ok, nok) {
       effects.consume(code)
       effects.exit('lineEnding')
       return gap
-    }
+    } // Data.
 
-    // Data.
     effects.enter('codeTextData')
     return data(code)
-  }
+  } // In code.
 
-  // In code.
   function data(code) {
     if (
       code === null ||
@@ -17148,51 +18012,56 @@ function tokenizeCodeText(effects, ok, nok) {
 
     effects.consume(code)
     return data
-  }
+  } // Closing fence.
 
-  // Closing fence.
   function closingSequence(code) {
     // More.
     if (code === 96) {
       effects.consume(code)
       size++
       return closingSequence
-    }
+    } // Done!
 
-    // Done!
     if (size === sizeOpen) {
       effects.exit('codeTextSequence')
       effects.exit('codeText')
       return ok(code)
-    }
+    } // More or less accents: mark as data.
 
-    // More or less accents: mark as data.
     token.type = 'codeTextData'
     return data(code)
   }
 }
 
+module.exports = codeText
+
 
 /***/ }),
 
 /***/ 1259:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeContent
-exports.resolve = resolveContent
-exports.interruptible = true
-exports.lazy = true
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
-
-var subtokenize = __nccwpck_require__(14)
 var prefixSize = __nccwpck_require__(3722)
-var createSpace = __nccwpck_require__(8200)
+var subtokenize = __nccwpck_require__(14)
+var factorySpace = __nccwpck_require__(8200)
 
-var lookaheadConstruct = {tokenize: tokenizeLookaheadConstruct, partial: true}
-
-// Content is transparent: it’s parsed right now. That way, definitions are also
+// No name because it must not be turned off.
+var content = {
+  tokenize: tokenizeContent,
+  resolve: resolveContent,
+  interruptible: true,
+  lazy: true
+}
+var continuationConstruct = {
+  tokenize: tokenizeContinuation,
+  partial: true
+} // Content is transparent: it’s parsed right now. That way, definitions are also
 // parsed right now: before text in paragraphs (specifically, media) are parsed.
+
 function resolveContent(events) {
   subtokenize(events)
   return events
@@ -17200,7 +18069,6 @@ function resolveContent(events) {
 
 function tokenizeContent(effects, ok) {
   var previous
-
   return start
 
   function start(code) {
@@ -17208,7 +18076,6 @@ function tokenizeContent(effects, ok) {
     previous = effects.enter('chunkContent', {
       contentType: 'content'
     })
-
     return data(code)
   }
 
@@ -17219,13 +18086,12 @@ function tokenizeContent(effects, ok) {
 
     if (markdownLineEnding(code)) {
       return effects.check(
-        lookaheadConstruct,
+        continuationConstruct,
         contentContinue,
         contentEnd
       )(code)
-    }
+    } // Data.
 
-    // Data.
     effects.consume(code)
     return data
   }
@@ -17243,21 +18109,19 @@ function tokenizeContent(effects, ok) {
       contentType: 'content',
       previous: previous
     })
-
     return data
   }
 }
 
-function tokenizeLookaheadConstruct(effects, ok, nok) {
+function tokenizeContinuation(effects, ok, nok) {
   var self = this
-
   return startLookahead
 
   function startLookahead(code) {
     effects.enter('lineEnding')
     effects.consume(code)
     effects.exit('lineEnding')
-    return createSpace(effects, prefixed, 'linePrefix')
+    return factorySpace(effects, prefixed, 'linePrefix')
   }
 
   function prefixed(code) {
@@ -17265,7 +18129,10 @@ function tokenizeLookaheadConstruct(effects, ok, nok) {
       return nok(code)
     }
 
-    if (prefixSize(self.events, 'linePrefix') < 4) {
+    if (
+      self.parser.constructs.disable.null.indexOf('codeIndented') > -1 ||
+      prefixSize(self.events, 'linePrefix') < 4
+    ) {
       return effects.interrupt(self.parser.constructs.flow, nok, ok)(code)
     }
 
@@ -17273,39 +18140,43 @@ function tokenizeLookaheadConstruct(effects, ok, nok) {
   }
 }
 
+module.exports = content
+
 
 /***/ }),
 
 /***/ 1193:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeDefinition
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
 var markdownLineEndingOrSpace = __nccwpck_require__(9180)
 var normalizeIdentifier = __nccwpck_require__(712)
+var factoryDestination = __nccwpck_require__(9851)
+var factoryLabel = __nccwpck_require__(349)
+var factorySpace = __nccwpck_require__(8200)
+var factoryWhitespace = __nccwpck_require__(3168)
+var factoryTitle = __nccwpck_require__(9469)
 
-var createDestination = __nccwpck_require__(9851)
-var createLabel = __nccwpck_require__(349)
-var createSpace = __nccwpck_require__(8200)
-var createWhitespace = __nccwpck_require__(3168)
-var createTitle = __nccwpck_require__(9469)
+var definition = {
+  name: 'definition',
+  tokenize: tokenizeDefinition
+}
+var titleConstruct = {
+  tokenize: tokenizeTitle,
+  partial: true
+}
 
 function tokenizeDefinition(effects, ok, nok) {
   var self = this
-  var destinationAfter = effects.attempt(
-    {tokenize: tokenizeTitle, partial: true},
-    createSpace(effects, after, 'whitespace'),
-    createSpace(effects, after, 'whitespace')
-  )
-
   var identifier
-
   return start
 
   function start(code) {
     effects.enter('definition')
-    return createLabel.call(
+    return factoryLabel.call(
       self,
       effects,
       labelAfter,
@@ -17324,14 +18195,17 @@ function tokenizeDefinition(effects, ok, nok) {
     if (code === 58) {
       effects.enter('definitionMarker')
       effects.consume(code)
-      effects.exit('definitionMarker')
+      effects.exit('definitionMarker') // Note: blank lines can’t exist in content.
 
-      // Note: blank lines can’t exist in content.
-      return createWhitespace(
+      return factoryWhitespace(
         effects,
-        createDestination(
+        factoryDestination(
           effects,
-          destinationAfter,
+          effects.attempt(
+            titleConstruct,
+            factorySpace(effects, after, 'whitespace'),
+            factorySpace(effects, after, 'whitespace')
+          ),
           nok,
           'definitionDestination',
           'definitionDestinationLiteral',
@@ -17365,15 +18239,15 @@ function tokenizeTitle(effects, ok, nok) {
 
   function start(code) {
     return markdownLineEndingOrSpace(code)
-      ? createWhitespace(effects, before)(code)
+      ? factoryWhitespace(effects, before)(code)
       : nok(code)
   }
 
   function before(code) {
     if (code === 34 || code === 39 || code === 40) {
-      return createTitle(
+      return factoryTitle(
         effects,
-        createSpace(effects, after, 'whitespace'),
+        factorySpace(effects, after, 'whitespace'),
         nok,
         'definitionTitle',
         'definitionTitleMarker',
@@ -17389,20 +18263,23 @@ function tokenizeTitle(effects, ok, nok) {
   }
 }
 
+module.exports = definition
+
 
 /***/ }),
 
 /***/ 9851:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = createDestination
+"use strict";
+
 
 var asciiControl = __nccwpck_require__(1336)
 var markdownLineEndingOrSpace = __nccwpck_require__(9180)
 var markdownLineEnding = __nccwpck_require__(7506)
 
 // eslint-disable-next-line max-params
-function createDestination(
+function destinationFactory(
   effects,
   ok,
   nok,
@@ -17415,7 +18292,6 @@ function createDestination(
 ) {
   var limit = max || Infinity
   var balance = 0
-
   return start
 
   function start(code) {
@@ -17428,14 +18304,16 @@ function createDestination(
       return destinationEnclosedBefore
     }
 
-    if (asciiControl(code)) {
+    if (asciiControl(code) || code === 41) {
       return nok(code)
     }
 
     effects.enter(type)
     effects.enter(rawType)
     effects.enter(stringType)
-    effects.enter('chunkString', {contentType: 'string'})
+    effects.enter('chunkString', {
+      contentType: 'string'
+    })
     return destinationRaw(code)
   }
 
@@ -17450,7 +18328,9 @@ function createDestination(
     }
 
     effects.enter(stringType)
-    effects.enter('chunkString', {contentType: 'string'})
+    effects.enter('chunkString', {
+      contentType: 'string'
+    })
     return destinationEnclosed(code)
   }
 
@@ -17522,23 +18402,25 @@ function createDestination(
   }
 }
 
+module.exports = destinationFactory
+
 
 /***/ }),
 
 /***/ 349:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = createLabel
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
 var markdownSpace = __nccwpck_require__(5989)
 
 // eslint-disable-next-line max-params
-function createLabel(effects, ok, nok, type, markerType, stringType) {
+function labelFactory(effects, ok, nok, type, markerType, stringType) {
   var self = this
   var size = 0
   var data
-
   return start
 
   function start(code) {
@@ -17555,9 +18437,11 @@ function createLabel(effects, ok, nok, type, markerType, stringType) {
       code === null ||
       code === 91 ||
       (code === 93 && !data) ||
-      /* istanbul ignore next - footnotes. */
+      /* c8 ignore next */
       (code === 94 &&
+        /* c8 ignore next */
         !size &&
+        /* c8 ignore next */
         '_hiddenFootnoteSupport' in self.parser.constructs) ||
       size > 999
     ) {
@@ -17580,7 +18464,9 @@ function createLabel(effects, ok, nok, type, markerType, stringType) {
       return atBreak
     }
 
-    effects.enter('chunkString', {contentType: 'string'})
+    effects.enter('chunkString', {
+      contentType: 'string'
+    })
     return label(code)
   }
 
@@ -17612,26 +18498,27 @@ function createLabel(effects, ok, nok, type, markerType, stringType) {
   }
 }
 
+module.exports = labelFactory
+
 
 /***/ }),
 
 /***/ 8200:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = createSpace
+"use strict";
+
 
 var markdownSpace = __nccwpck_require__(5989)
 
-function createSpace(effects, ok, type, max) {
+function spaceFactory(effects, ok, type, max) {
   var limit = max ? max - 1 : Infinity
-  var size
-
+  var size = 0
   return start
 
   function start(code) {
     if (markdownSpace(code)) {
       effects.enter(type)
-      size = 0
       return prefix(code)
     }
 
@@ -17649,22 +18536,22 @@ function createSpace(effects, ok, type, max) {
   }
 }
 
+module.exports = spaceFactory
+
 
 /***/ }),
 
 /***/ 9469:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = createTitle
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
+var factorySpace = __nccwpck_require__(8200)
 
-var createSpace = __nccwpck_require__(8200)
-
-// eslint-disable-next-line max-params
-function createTitle(effects, ok, nok, type, markerType, stringType) {
+function titleFactory(effects, ok, nok, type, markerType, stringType) {
   var marker
-
   return start
 
   function start(code) {
@@ -17697,17 +18584,18 @@ function createTitle(effects, ok, nok, type, markerType, stringType) {
 
     if (code === null) {
       return nok(code)
-    }
+    } // Note: blank lines can’t exist in content.
 
-    // Note: blank lines can’t exist in content.
     if (markdownLineEnding(code)) {
       effects.enter('lineEnding')
       effects.consume(code)
       effects.exit('lineEnding')
-      return createSpace(effects, atTitleBreak, 'linePrefix')
+      return factorySpace(effects, atTitleBreak, 'linePrefix')
     }
 
-    effects.enter('chunkString', {contentType: 'string'})
+    effects.enter('chunkString', {
+      contentType: 'string'
+    })
     return title(code)
   }
 
@@ -17731,20 +18619,22 @@ function createTitle(effects, ok, nok, type, markerType, stringType) {
   }
 }
 
+module.exports = titleFactory
+
 
 /***/ }),
 
 /***/ 3168:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = createWhitespace
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
 var markdownSpace = __nccwpck_require__(5989)
+var factorySpace = __nccwpck_require__(8200)
 
-var createSpace = __nccwpck_require__(8200)
-
-function createWhitespace(effects, ok) {
+function whitespaceFactory(effects, ok) {
   var seen
   return start
 
@@ -17758,7 +18648,7 @@ function createWhitespace(effects, ok) {
     }
 
     if (markdownSpace(code)) {
-      return createSpace(
+      return factorySpace(
         effects,
         start,
         seen ? 'linePrefix' : 'lineSuffix'
@@ -17769,15 +18659,23 @@ function createWhitespace(effects, ok) {
   }
 }
 
+module.exports = whitespaceFactory
+
 
 /***/ }),
 
 /***/ 7608:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeHardBreakEscape
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
+
+var hardBreakEscape = {
+  name: 'hardBreakEscape',
+  tokenize: tokenizeHardBreakEscape
+}
 
 function tokenizeHardBreakEscape(effects, ok, nok) {
   return start
@@ -17800,34 +18698,39 @@ function tokenizeHardBreakEscape(effects, ok, nok) {
   }
 }
 
+module.exports = hardBreakEscape
+
 
 /***/ }),
 
 /***/ 4558:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeAtxHeading
-exports.resolve = resolveAtxHeading
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
 var markdownLineEndingOrSpace = __nccwpck_require__(9180)
 var markdownSpace = __nccwpck_require__(5989)
-
 var chunkedSplice = __nccwpck_require__(778)
-var createSpace = __nccwpck_require__(8200)
+var factorySpace = __nccwpck_require__(8200)
 
-function resolveAtxHeading(events, context) {
+var headingAtx = {
+  name: 'headingAtx',
+  tokenize: tokenizeHeadingAtx,
+  resolve: resolveHeadingAtx
+}
+
+function resolveHeadingAtx(events, context) {
   var contentEnd = events.length - 2
   var contentStart = 3
   var content
-  var text
+  var text // Prefix whitespace, part of the opening.
 
-  // Prefix whitespace, part of the opening.
   if (events[contentStart][1].type === 'whitespace') {
     contentStart += 2
-  }
+  } // Suffix whitespace, part of the closing.
 
-  // Suffix whitespace, part of the closing.
   if (
     contentEnd - 2 > contentStart &&
     events[contentEnd][1].type === 'whitespace'
@@ -17850,14 +18753,12 @@ function resolveAtxHeading(events, context) {
       start: events[contentStart][1].start,
       end: events[contentEnd][1].end
     }
-
     text = {
       type: 'chunkText',
       start: events[contentStart][1].start,
       end: events[contentEnd][1].end,
       contentType: 'text'
     }
-
     chunkedSplice(events, contentStart, contentEnd - contentStart + 1, [
       ['enter', content, context],
       ['enter', text, context],
@@ -17869,10 +18770,9 @@ function resolveAtxHeading(events, context) {
   return events
 }
 
-function tokenizeAtxHeading(effects, ok, nok) {
+function tokenizeHeadingAtx(effects, ok, nok) {
   var self = this
   var size = 0
-
   return start
 
   function start(code) {
@@ -17907,7 +18807,7 @@ function tokenizeAtxHeading(effects, ok, nok) {
     }
 
     if (markdownSpace(code)) {
-      return createSpace(effects, headingBreak, 'whitespace')(code)
+      return factorySpace(effects, headingBreak, 'whitespace')(code)
     }
 
     effects.enter('atxHeadingText')
@@ -17935,32 +18835,39 @@ function tokenizeAtxHeading(effects, ok, nok) {
   }
 }
 
+module.exports = headingAtx
+
 
 /***/ }),
 
 /***/ 6791:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeHtml
-exports.resolveTo = resolveToHtml
-exports.concrete = true
+"use strict";
+
 
 var asciiAlpha = __nccwpck_require__(3847)
 var asciiAlphanumeric = __nccwpck_require__(598)
-
 var markdownLineEnding = __nccwpck_require__(7506)
 var markdownLineEndingOrSpace = __nccwpck_require__(9180)
 var markdownSpace = __nccwpck_require__(5989)
-
 var fromCharCode = __nccwpck_require__(3531)
-var basics = __nccwpck_require__(5159)
-var raws = __nccwpck_require__(4677)
+var htmlBlockNames = __nccwpck_require__(5159)
+var htmlRawNames = __nccwpck_require__(4677)
+var partialBlankLine = __nccwpck_require__(2244)
 
-var blank = __nccwpck_require__(2244)
+var htmlFlow = {
+  name: 'htmlFlow',
+  tokenize: tokenizeHtmlFlow,
+  resolveTo: resolveToHtmlFlow,
+  concrete: true
+}
+var nextBlankConstruct = {
+  tokenize: tokenizeNextBlank,
+  partial: true
+}
 
-var nextBlank = {tokenize: tokenizeNextBlank, partial: true}
-
-function resolveToHtml(events) {
+function resolveToHtmlFlow(events) {
   var index = events.length
 
   while (index--) {
@@ -17971,24 +18878,23 @@ function resolveToHtml(events) {
 
   if (index > 1 && events[index - 2][1].type === 'linePrefix') {
     // Add the prefix start to the HTML token.
-    events[index][1].start = events[index - 2][1].start
-    // Add the prefix start to the HTML line token.
-    events[index + 1][1].start = events[index - 2][1].start
-    // Remove the line prefix.
+    events[index][1].start = events[index - 2][1].start // Add the prefix start to the HTML line token.
+
+    events[index + 1][1].start = events[index - 2][1].start // Remove the line prefix.
+
     events.splice(index - 2, 2)
   }
 
   return events
 }
 
-function tokenizeHtml(effects, ok, nok) {
+function tokenizeHtmlFlow(effects, ok, nok) {
   var self = this
   var kind
   var startTag
   var buffer
   var index
   var marker
-
   return start
 
   function start(code) {
@@ -18011,9 +18917,9 @@ function tokenizeHtml(effects, ok, nok) {
 
     if (code === 63) {
       effects.consume(code)
-      kind = 3
-      // While we’re in an instruction instead of a declaration, we’re on a `?`
+      kind = 3 // While we’re in an instruction instead of a declaration, we’re on a `?`
       // right now, so we do need to search for `>`, similar to declarations.
+
       return self.interrupt ? ok : continuationDeclarationInside
     }
 
@@ -18090,12 +18996,16 @@ function tokenizeHtml(effects, ok, nok) {
       code === 62 ||
       markdownLineEndingOrSpace(code)
     ) {
-      if (code !== 47 && startTag && raws.indexOf(buffer.toLowerCase()) > -1) {
+      if (
+        code !== 47 &&
+        startTag &&
+        htmlRawNames.indexOf(buffer.toLowerCase()) > -1
+      ) {
         kind = 1
         return self.interrupt ? ok(code) : continuation(code)
       }
 
-      if (basics.indexOf(buffer.toLowerCase()) > -1) {
+      if (htmlBlockNames.indexOf(buffer.toLowerCase()) > -1) {
         kind = 6
 
         if (code === 47) {
@@ -18106,8 +19016,8 @@ function tokenizeHtml(effects, ok, nok) {
         return self.interrupt ? ok(code) : continuation(code)
       }
 
-      kind = 7
-      // Do not support complete HTML when interrupting.
+      kind = 7 // Do not support complete HTML when interrupting.
+
       return self.interrupt
         ? nok(code)
         : startTag
@@ -18304,7 +19214,7 @@ function tokenizeHtml(effects, ok, nok) {
 
     if (markdownLineEnding(code) && (kind === 6 || kind === 7)) {
       return effects.check(
-        nextBlank,
+        nextBlankConstruct,
         continuationClose,
         continuationAtLineEnding
       )(code)
@@ -18359,12 +19269,12 @@ function tokenizeHtml(effects, ok, nok) {
   }
 
   function continuationRawEndTag(code) {
-    if (code === 62 && raws.indexOf(buffer.toLowerCase()) > -1) {
+    if (code === 62 && htmlRawNames.indexOf(buffer.toLowerCase()) > -1) {
       effects.consume(code)
       return continuationClose
     }
 
-    if (asciiAlpha(code) && buffer.length < 6) {
+    if (asciiAlpha(code) && buffer.length < 8) {
       effects.consume(code)
       buffer += fromCharCode(code)
       return continuationRawEndTag
@@ -18415,32 +19325,39 @@ function tokenizeNextBlank(effects, ok, nok) {
     effects.enter('lineEndingBlank')
     effects.consume(code)
     effects.exit('lineEndingBlank')
-    return effects.attempt(blank, ok, nok)
+    return effects.attempt(partialBlankLine, ok, nok)
   }
 }
+
+module.exports = htmlFlow
 
 
 /***/ }),
 
 /***/ 7743:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeHtml
+"use strict";
 
+
+var asciiAlpha = __nccwpck_require__(3847)
+var asciiAlphanumeric = __nccwpck_require__(598)
 var markdownLineEnding = __nccwpck_require__(7506)
 var markdownLineEndingOrSpace = __nccwpck_require__(9180)
 var markdownSpace = __nccwpck_require__(5989)
-var asciiAlpha = __nccwpck_require__(3847)
-var asciiAlphanumeric = __nccwpck_require__(598)
+var factorySpace = __nccwpck_require__(8200)
 
-var createSpace = __nccwpck_require__(8200)
+var htmlText = {
+  name: 'htmlText',
+  tokenize: tokenizeHtmlText
+}
 
-function tokenizeHtml(effects, ok, nok) {
+function tokenizeHtmlText(effects, ok, nok) {
+  var self = this
   var marker
   var buffer
   var index
   var returnState
-
   return start
 
   function start(code) {
@@ -18570,6 +19487,11 @@ function tokenizeHtml(effects, ok, nok) {
     if (code === 93) {
       effects.consume(code)
       return cdataClose
+    }
+
+    if (markdownLineEnding(code)) {
+      returnState = cdata
+      return atLineEnding(code)
     }
 
     effects.consume(code)
@@ -18815,16 +19737,22 @@ function tokenizeHtml(effects, ok, nok) {
 
     effects.consume(code)
     return tagOpenAttributeValueUnquoted
-  }
-
-  // We can’t have blank lines in content, so no need to worry about empty
+  } // We can’t have blank lines in content, so no need to worry about empty
   // tokens.
+
   function atLineEnding(code) {
     effects.exit('htmlTextData')
     effects.enter('lineEnding')
     effects.consume(code)
     effects.exit('lineEnding')
-    return createSpace(effects, afterPrefix, 'linePrefix', 4)
+    return factorySpace(
+      effects,
+      afterPrefix,
+      'linePrefix',
+      self.parser.constructs.disable.null.indexOf('codeIndented') > -1
+        ? undefined
+        : 4
+    )
   }
 
   function afterPrefix(code) {
@@ -18844,30 +19772,43 @@ function tokenizeHtml(effects, ok, nok) {
   }
 }
 
+module.exports = htmlText
+
 
 /***/ }),
 
 /***/ 9797:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeLabelEnd
-exports.resolveTo = resolveToLabelEnd
-exports.resolveAll = resolveAllLabelEnd
+"use strict";
+
 
 var markdownLineEndingOrSpace = __nccwpck_require__(9180)
-
-var normalizeIdentifier = __nccwpck_require__(712)
+var chunkedPush = __nccwpck_require__(4455)
 var chunkedSplice = __nccwpck_require__(778)
+var normalizeIdentifier = __nccwpck_require__(712)
 var resolveAll = __nccwpck_require__(2004)
 var shallow = __nccwpck_require__(1479)
-var createDestination = __nccwpck_require__(9851)
-var createLabel = __nccwpck_require__(349)
-var createWhitespace = __nccwpck_require__(3168)
-var createTitle = __nccwpck_require__(9469)
+var factoryDestination = __nccwpck_require__(9851)
+var factoryLabel = __nccwpck_require__(349)
+var factoryTitle = __nccwpck_require__(9469)
+var factoryWhitespace = __nccwpck_require__(3168)
 
-var resource = {tokenize: tokenizeResource}
-var fullReference = {tokenize: tokenizeFullReference}
-var collapsedReference = {tokenize: tokenizeCollapsedReference}
+var labelEnd = {
+  name: 'labelEnd',
+  tokenize: tokenizeLabelEnd,
+  resolveTo: resolveToLabelEnd,
+  resolveAll: resolveAllLabelEnd
+}
+var resourceConstruct = {
+  tokenize: tokenizeResource
+}
+var fullReferenceConstruct = {
+  tokenize: tokenizeFullReference
+}
+var collapsedReferenceConstruct = {
+  tokenize: tokenizeCollapsedReference
+}
 
 function resolveAllLabelEnd(events) {
   var index = -1
@@ -18901,9 +19842,8 @@ function resolveToLabelEnd(events, context) {
   var token
   var open
   var close
-  var media
+  var media // Find an opening.
 
-  // Find an opening.
   while (index--) {
     token = events[index][1]
 
@@ -18914,10 +19854,9 @@ function resolveToLabelEnd(events, context) {
         (token.type === 'labelLink' && token._inactive)
       ) {
         break
-      }
-
-      // Mark other link openings as inactive, as we can’t have links in
+      } // Mark other link openings as inactive, as we can’t have links in
       // links.
+
       if (events[index][0] === 'enter' && token.type === 'labelLink') {
         token._inactive = true
       }
@@ -18944,63 +19883,45 @@ function resolveToLabelEnd(events, context) {
     start: shallow(events[open][1].start),
     end: shallow(events[events.length - 1][1].end)
   }
-
   label = {
     type: 'label',
     start: shallow(events[open][1].start),
     end: shallow(events[close][1].end)
   }
-
   text = {
     type: 'labelText',
     start: shallow(events[open + offset + 2][1].end),
     end: shallow(events[close - 2][1].start)
   }
-
   media = [
     ['enter', group, context],
     ['enter', label, context]
-  ]
+  ] // Opening marker.
 
-  // Opening marker.
-  chunkedSplice(
+  media = chunkedPush(media, events.slice(open + 1, open + offset + 3)) // Text open.
+
+  media = chunkedPush(media, [['enter', text, context]]) // Between.
+
+  media = chunkedPush(
     media,
-    media.length,
-    0,
-    events.slice(open + 1, open + offset + 3)
-  )
-
-  // Text open.
-  chunkedSplice(media, media.length, 0, [['enter', text, context]])
-
-  // Between.
-  chunkedSplice(
-    media,
-    media.length,
-    0,
     resolveAll(
       context.parser.constructs.insideSpan.null,
       events.slice(open + offset + 4, close - 3),
       context
     )
-  )
+  ) // Text close, marker close, label close.
 
-  // Text close, marker close, label close.
-  chunkedSplice(media, media.length, 0, [
+  media = chunkedPush(media, [
     ['exit', text, context],
     events[close - 2],
     events[close - 1],
     ['exit', label, context]
-  ])
+  ]) // Reference, resource, or so.
 
-  // Reference, resource, or so.
-  chunkedSplice(media, media.length, 0, events.slice(close + 1))
+  media = chunkedPush(media, events.slice(close + 1)) // Media close.
 
-  // Media close.
-  chunkedSplice(media, media.length, 0, [['exit', group, context]])
-
+  media = chunkedPush(media, [['exit', group, context]])
   chunkedSplice(events, open, events.length, media)
-
   return events
 }
 
@@ -19008,9 +19929,8 @@ function tokenizeLabelEnd(effects, ok, nok) {
   var self = this
   var index = self.events.length
   var labelStart
-  var defined
+  var defined // Find an opening.
 
-  // Find an opening.
   while (index--) {
     if (
       (self.events[index][1].type === 'labelImage' ||
@@ -19027,14 +19947,16 @@ function tokenizeLabelEnd(effects, ok, nok) {
   function start(code) {
     if (!labelStart) {
       return nok(code)
-    }
+    } // It’s a balanced bracket, but contains a link.
 
-    // It’s a balanced bracket, but contains a link.
     if (labelStart._inactive) return balanced(code)
     defined =
       self.parser.defined.indexOf(
         normalizeIdentifier(
-          self.sliceSerialize({start: labelStart.end, end: self.now()})
+          self.sliceSerialize({
+            start: labelStart.end,
+            end: self.now()
+          })
         )
       ) > -1
     effects.enter('labelEnd')
@@ -19048,19 +19970,23 @@ function tokenizeLabelEnd(effects, ok, nok) {
   function afterLabelEnd(code) {
     // Resource: `[asd](fgh)`.
     if (code === 40) {
-      return effects.attempt(resource, ok, defined ? ok : balanced)(code)
-    }
+      return effects.attempt(
+        resourceConstruct,
+        ok,
+        defined ? ok : balanced
+      )(code)
+    } // Collapsed (`[asd][]`) or full (`[asd][fgh]`) reference?
 
-    // Collapsed (`[asd][]`) or full (`[asd][fgh]`) reference?
     if (code === 91) {
       return effects.attempt(
-        fullReference,
+        fullReferenceConstruct,
         ok,
-        defined ? effects.attempt(collapsedReference, ok, balanced) : balanced
+        defined
+          ? effects.attempt(collapsedReferenceConstruct, ok, balanced)
+          : balanced
       )(code)
-    }
+    } // Shortcut reference: `[asd]`?
 
-    // Shortcut reference: `[asd]`?
     return defined ? ok(code) : balanced(code)
   }
 
@@ -19078,7 +20004,7 @@ function tokenizeResource(effects, ok, nok) {
     effects.enter('resourceMarker')
     effects.consume(code)
     effects.exit('resourceMarker')
-    return createWhitespace(effects, open)
+    return factoryWhitespace(effects, open)
   }
 
   function open(code) {
@@ -19086,7 +20012,7 @@ function tokenizeResource(effects, ok, nok) {
       return end(code)
     }
 
-    return createDestination(
+    return factoryDestination(
       effects,
       destinationAfter,
       nok,
@@ -19101,15 +20027,15 @@ function tokenizeResource(effects, ok, nok) {
 
   function destinationAfter(code) {
     return markdownLineEndingOrSpace(code)
-      ? createWhitespace(effects, between)(code)
+      ? factoryWhitespace(effects, between)(code)
       : end(code)
   }
 
   function between(code) {
     if (code === 34 || code === 39 || code === 40) {
-      return createTitle(
+      return factoryTitle(
         effects,
-        createWhitespace(effects, end),
+        factoryWhitespace(effects, end),
         nok,
         'resourceTitle',
         'resourceTitleMarker',
@@ -19135,11 +20061,10 @@ function tokenizeResource(effects, ok, nok) {
 
 function tokenizeFullReference(effects, ok, nok) {
   var self = this
-
   return start
 
   function start(code) {
-    return createLabel.call(
+    return factoryLabel.call(
       self,
       effects,
       afterLabel,
@@ -19185,18 +20110,27 @@ function tokenizeCollapsedReference(effects, ok, nok) {
   }
 }
 
+module.exports = labelEnd
+
 
 /***/ }),
 
 /***/ 7860:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizelabelImage
-exports.resolveAll = __nccwpck_require__(9797).resolveAll
+"use strict";
 
-function tokenizelabelImage(effects, ok, nok) {
+
+var labelEnd = __nccwpck_require__(9797)
+
+var labelStartImage = {
+  name: 'labelStartImage',
+  tokenize: tokenizeLabelStartImage,
+  resolveAll: labelEnd.resolveAll
+}
+
+function tokenizeLabelStartImage(effects, ok, nok) {
   var self = this
-
   return start
 
   function start(code) {
@@ -19220,25 +20154,37 @@ function tokenizelabelImage(effects, ok, nok) {
   }
 
   function after(code) {
-    /* istanbul ignore next - footnotes. */
-    return code === 94 && '_hiddenFootnoteSupport' in self.parser.constructs
-      ? nok(code)
+    /* c8 ignore next */
+    return code === 94 &&
+      /* c8 ignore next */
+      '_hiddenFootnoteSupport' in self.parser.constructs
+      ? /* c8 ignore next */
+        nok(code)
       : ok(code)
   }
 }
+
+module.exports = labelStartImage
 
 
 /***/ }),
 
 /***/ 5908:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizelabelLink
-exports.resolveAll = __nccwpck_require__(9797).resolveAll
+"use strict";
 
-function tokenizelabelLink(effects, ok, nok) {
+
+var labelEnd = __nccwpck_require__(9797)
+
+var labelStartLink = {
+  name: 'labelStartLink',
+  tokenize: tokenizeLabelStartLink,
+  resolveAll: labelEnd.resolveAll
+}
+
+function tokenizeLabelStartLink(effects, ok, nok) {
   var self = this
-
   return start
 
   function start(code) {
@@ -19251,144 +20197,156 @@ function tokenizelabelLink(effects, ok, nok) {
   }
 
   function after(code) {
-    /* istanbul ignore next - footnotes. */
-    return code === 94 && '_hiddenFootnoteSupport' in self.parser.constructs
-      ? nok(code)
+    /* c8 ignore next */
+    return code === 94 &&
+      /* c8 ignore next */
+      '_hiddenFootnoteSupport' in self.parser.constructs
+      ? /* c8 ignore next */
+        nok(code)
       : ok(code)
   }
 }
+
+module.exports = labelStartLink
 
 
 /***/ }),
 
 /***/ 5183:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeWhitespace
+"use strict";
 
-var markdownLineEnding = __nccwpck_require__(7506)
 
-var createSpace = __nccwpck_require__(8200)
+var factorySpace = __nccwpck_require__(8200)
 
-function tokenizeWhitespace(effects, ok) {
+var lineEnding = {
+  name: 'lineEnding',
+  tokenize: tokenizeLineEnding
+}
+
+function tokenizeLineEnding(effects, ok) {
   return start
 
   function start(code) {
     effects.enter('lineEnding')
     effects.consume(code)
     effects.exit('lineEnding')
-    return createSpace(effects, ok, 'linePrefix')
+    return factorySpace(effects, ok, 'linePrefix')
   }
 }
+
+module.exports = lineEnding
 
 
 /***/ }),
 
 /***/ 3107:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeListStart
-exports.continuation = {tokenize: tokenizeListContinuation}
-exports.exit = tokenizeListEnd
+"use strict";
 
-var markdownSpace = __nccwpck_require__(5989)
+
 var asciiDigit = __nccwpck_require__(6996)
-
+var markdownSpace = __nccwpck_require__(5989)
 var prefixSize = __nccwpck_require__(3722)
 var sizeChunks = __nccwpck_require__(5041)
+var factorySpace = __nccwpck_require__(8200)
+var partialBlankLine = __nccwpck_require__(2244)
 var thematicBreak = __nccwpck_require__(5590)
-var createSpace = __nccwpck_require__(8200)
-var blank = __nccwpck_require__(2244)
+
+var list = {
+  name: 'list',
+  tokenize: tokenizeListStart,
+  continuation: {
+    tokenize: tokenizeListContinuation
+  },
+  exit: tokenizeListEnd
+}
+var listItemPrefixWhitespaceConstruct = {
+  tokenize: tokenizeListItemPrefixWhitespace,
+  partial: true
+}
+var indentConstruct = {
+  tokenize: tokenizeIndent,
+  partial: true
+}
 
 function tokenizeListStart(effects, ok, nok) {
   var self = this
   var initialSize = prefixSize(self.events, 'linePrefix')
-  var valueSize
-
+  var size = 0
   return start
 
   function start(code) {
-    if (
-      (code === 42 || code === 43 || code === 45) &&
-      (!self.containerState.marker || code === self.containerState.marker)
-    ) {
-      return code === 42 || code === 45
-        ? effects.check(thematicBreak, nok, unordered)(code)
-        : unordered(code)
-    }
+    var kind =
+      self.containerState.type ||
+      (code === 42 || code === 43 || code === 45
+        ? 'listUnordered'
+        : 'listOrdered')
 
     if (
-      asciiDigit(code) &&
-      (!self.containerState.type || self.containerState.type === 'listOrdered')
+      kind === 'listUnordered'
+        ? !self.containerState.marker || code === self.containerState.marker
+        : asciiDigit(code)
     ) {
-      return ordered(code)
-    }
-
-    return nok(code)
-  }
-
-  function unordered(code) {
-    if (!self.containerState.type) {
-      self.containerState.type = 'listUnordered'
-      effects.enter(self.containerState.type, {_container: true})
-    }
-
-    effects.enter('listItemPrefix')
-    return atMarker(code)
-  }
-
-  function ordered(code) {
-    if (self.containerState.type || !self.interrupt || code === 49) {
       if (!self.containerState.type) {
-        self.containerState.type = 'listOrdered'
-        effects.enter(self.containerState.type, {_container: true})
+        self.containerState.type = kind
+        effects.enter(kind, {
+          _container: true
+        })
       }
 
-      effects.enter('listItemPrefix')
-      effects.enter('listItemValue')
-      effects.consume(code)
-      valueSize = 1
-      return self.interrupt ? afterValue : inside
+      if (kind === 'listUnordered') {
+        effects.enter('listItemPrefix')
+        return code === 42 || code === 45
+          ? effects.check(thematicBreak, nok, atMarker)(code)
+          : atMarker(code)
+      }
+
+      if (!self.interrupt || code === 49) {
+        effects.enter('listItemPrefix')
+        effects.enter('listItemValue')
+        return inside(code)
+      }
     }
 
     return nok(code)
   }
 
   function inside(code) {
-    if (asciiDigit(code) && ++valueSize < 10) {
+    if (asciiDigit(code) && ++size < 10) {
       effects.consume(code)
       return inside
     }
 
-    return afterValue(code)
-  }
-
-  function afterValue(code) {
-    effects.exit('listItemValue')
-
-    return code === 41 || code === 46 ? atMarker(code) : nok(code)
-  }
-
-  function atMarker(code) {
-    self.containerState.marker = self.containerState.marker || code
-
-    if (code === self.containerState.marker) {
-      effects.enter('listItemMarker')
-      effects.consume(code)
-      effects.exit('listItemMarker')
-      return effects.check(
-        blank,
-        // Can’t be empty when interrupting.
-        self.interrupt ? nok : onBlank,
-        effects.attempt(
-          {tokenize: tokenizeListItemPrefixWhitespace, partial: true},
-          endOfPrefix,
-          otherPrefix
-        )
-      )
+    if (
+      (!self.interrupt || size < 2) &&
+      (self.containerState.marker
+        ? code === self.containerState.marker
+        : code === 41 || code === 46)
+    ) {
+      effects.exit('listItemValue')
+      return atMarker(code)
     }
 
     return nok(code)
+  }
+
+  function atMarker(code) {
+    effects.enter('listItemMarker')
+    effects.consume(code)
+    effects.exit('listItemMarker')
+    self.containerState.marker = self.containerState.marker || code
+    return effects.check(
+      partialBlankLine, // Can’t be empty when interrupting.
+      self.interrupt ? nok : onBlank,
+      effects.attempt(
+        listItemPrefixWhitespaceConstruct,
+        endOfPrefix,
+        otherPrefix
+      )
+    )
   }
 
   function onBlank(code) {
@@ -19417,16 +20375,21 @@ function tokenizeListStart(effects, ok, nok) {
 
 function tokenizeListContinuation(effects, ok, nok) {
   var self = this
-
   self.containerState._closeFlow = undefined
-
-  return effects.check(blank, onBlank, notBlank)
+  return effects.check(partialBlankLine, onBlank, notBlank)
 
   function onBlank(code) {
     self.containerState.furtherBlankLines =
       self.containerState.furtherBlankLines ||
-      self.containerState.initialBlankLine
-    return ok(code)
+      self.containerState.initialBlankLine // We have a blank line.
+    // Still, try to consume at most the items size.
+
+    return factorySpace(
+      effects,
+      ok,
+      'listItemIndent',
+      self.containerState.size + 1
+    )(code)
   }
 
   function notBlank(code) {
@@ -19436,35 +20399,31 @@ function tokenizeListContinuation(effects, ok, nok) {
     }
 
     self.containerState.furtherBlankLines = self.containerState.initialBlankLine = undefined
-    return effects.attempt(
-      {tokenize: tokenizeIndent, partial: true},
-      ok,
-      notInCurrentItem
-    )(code)
+    return effects.attempt(indentConstruct, ok, notInCurrentItem)(code)
   }
 
   function notInCurrentItem(code) {
     // While we do continue, we signal that the flow should be closed.
-    self.containerState._closeFlow = true
-    // As we’re closing flow, we’re no longer interrupting
+    self.containerState._closeFlow = true // As we’re closing flow, we’re no longer interrupting.
+
     self.interrupt = undefined
-    return createSpace(
+    return factorySpace(
       effects,
-      effects.attempt(exports, ok, nok),
+      effects.attempt(list, ok, nok),
       'linePrefix',
-      4
+      self.parser.constructs.disable.null.indexOf('codeIndented') > -1
+        ? undefined
+        : 4
     )(code)
   }
 }
 
 function tokenizeIndent(effects, ok, nok) {
   var self = this
-
-  return createSpace(
+  return factorySpace(
     effects,
     afterPrefix,
     'listItemIndent',
-
     self.containerState.size + 1
   )
 
@@ -19482,13 +20441,13 @@ function tokenizeListEnd(effects) {
 
 function tokenizeListItemPrefixWhitespace(effects, ok, nok) {
   var self = this
-
-  return createSpace(
+  return factorySpace(
     effects,
     afterPrefix,
     'listItemPrefixWhitespace',
-
-    4 + 1
+    self.parser.constructs.disable.null.indexOf('codeIndented') > -1
+      ? undefined
+      : 4 + 1
   )
 
   function afterPrefix(code) {
@@ -19499,50 +20458,62 @@ function tokenizeListItemPrefixWhitespace(effects, ok, nok) {
   }
 }
 
+module.exports = list
+
 
 /***/ }),
 
 /***/ 2244:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeBlankLine
-exports.partial = true
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
+var factorySpace = __nccwpck_require__(8200)
 
-var createSpace = __nccwpck_require__(8200)
+var partialBlankLine = {
+  tokenize: tokenizePartialBlankLine,
+  partial: true
+}
 
-function tokenizeBlankLine(effects, ok, nok) {
-  return createSpace(effects, afterWhitespace, 'linePrefix')
+function tokenizePartialBlankLine(effects, ok, nok) {
+  return factorySpace(effects, afterWhitespace, 'linePrefix')
 
   function afterWhitespace(code) {
     return code === null || markdownLineEnding(code) ? ok(code) : nok(code)
   }
 }
 
+module.exports = partialBlankLine
+
 
 /***/ }),
 
 /***/ 1196:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeSetextUnderline
-exports.resolveTo = resolveToSetextUnderline
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
-
 var shallow = __nccwpck_require__(1479)
-var createSpace = __nccwpck_require__(8200)
+var factorySpace = __nccwpck_require__(8200)
+
+var setextUnderline = {
+  name: 'setextUnderline',
+  tokenize: tokenizeSetextUnderline,
+  resolveTo: resolveToSetextUnderline
+}
 
 function resolveToSetextUnderline(events, context) {
   var index = events.length
   var content
   var text
   var definition
-  var heading
-
-  // Find the opening of the content.
+  var heading // Find the opening of the content.
   // It’ll always exist: we don’t tokenize if it isn’t there.
+
   while (index--) {
     if (events[index][0] === 'enter') {
       if (events[index][1].type === 'content') {
@@ -19553,8 +20524,7 @@ function resolveToSetextUnderline(events, context) {
       if (events[index][1].type === 'paragraph') {
         text = index
       }
-    }
-    // Exit
+    } // Exit
     else {
       if (events[index][1].type === 'content') {
         // Remove the content end (if needed we’ll add it later)
@@ -19571,24 +20541,20 @@ function resolveToSetextUnderline(events, context) {
     type: 'setextHeading',
     start: shallow(events[text][1].start),
     end: shallow(events[events.length - 1][1].end)
-  }
+  } // Change the paragraph to setext heading text.
 
-  // Change the paragraph to setext heading text.
-  events[text][1].type = 'setextHeadingText'
-
-  // If we have definitions in the content, we’ll keep on having content,
+  events[text][1].type = 'setextHeadingText' // If we have definitions in the content, we’ll keep on having content,
   // but we need move it.
+
   if (definition) {
     events.splice(text, 0, ['enter', heading, context])
     events.splice(definition + 1, 0, ['exit', events[content][1], context])
     events[content][1].end = shallow(events[definition][1].end)
   } else {
     events[content][1] = heading
-  }
+  } // Add the heading exit at the end.
 
-  // Add the heading exit at the end.
   events.push(['exit', heading, context])
-
   return events
 }
 
@@ -19596,9 +20562,8 @@ function tokenizeSetextUnderline(effects, ok, nok) {
   var self = this
   var index = self.events.length
   var marker
-  var paragraph
+  var paragraph // Find an opening.
 
-  // Find an opening.
   while (index--) {
     // Skip enter/exit of line ending, line prefix, and content.
     // We can now either have a definition or a paragraph.
@@ -19632,7 +20597,7 @@ function tokenizeSetextUnderline(effects, ok, nok) {
     }
 
     effects.exit('setextHeadingLineSequence')
-    return createSpace(effects, closingSequenceEnd, 'lineSuffix')(code)
+    return factorySpace(effects, closingSequenceEnd, 'lineSuffix')(code)
   }
 
   function closingSequenceEnd(code) {
@@ -19645,23 +20610,29 @@ function tokenizeSetextUnderline(effects, ok, nok) {
   }
 }
 
+module.exports = setextUnderline
+
 
 /***/ }),
 
 /***/ 5590:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-exports.tokenize = tokenizeThematicBreak
+"use strict";
+
 
 var markdownLineEnding = __nccwpck_require__(7506)
 var markdownSpace = __nccwpck_require__(5989)
+var factorySpace = __nccwpck_require__(8200)
 
-var createSpace = __nccwpck_require__(8200)
+var thematicBreak = {
+  name: 'thematicBreak',
+  tokenize: tokenizeThematicBreak
+}
 
 function tokenizeThematicBreak(effects, ok, nok) {
   var size = 0
   var marker
-
   return start
 
   function start(code) {
@@ -19677,7 +20648,7 @@ function tokenizeThematicBreak(effects, ok, nok) {
     }
 
     if (markdownSpace(code)) {
-      return createSpace(effects, atBreak, 'whitespace')(code)
+      return factorySpace(effects, atBreak, 'whitespace')(code)
     }
 
     if (size < 3 || (code !== null && !markdownLineEnding(code))) {
@@ -19700,55 +20671,75 @@ function tokenizeThematicBreak(effects, ok, nok) {
   }
 }
 
+module.exports = thematicBreak
+
+
+/***/ }),
+
+/***/ 4455:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var chunkedSplice = __nccwpck_require__(778)
+
+function chunkedPush(list, items) {
+  if (list.length) {
+    chunkedSplice(list, list.length, 0, items)
+    return list
+  }
+
+  return items
+}
+
+module.exports = chunkedPush
+
 
 /***/ }),
 
 /***/ 778:
-/***/ ((module) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = chunkedSplice
+"use strict";
 
-var v8MaxSafeChunkSize = 10000
 
-// `Array#splice` takes all items to be inserted as individual argument which
+var splice = __nccwpck_require__(2366)
+
 // causes a stack overflow in V8 when trying to insert 100k items for instance.
+
 function chunkedSplice(list, start, remove, items) {
   var end = list.length
   var chunkStart = 0
-  var result
-  var parameters
+  var parameters // Make start between zero and `end` (included).
 
-  // Make start between zero and `end` (included).
   if (start < 0) {
     start = -start > end ? 0 : end + start
   } else {
     start = start > end ? end : start
   }
 
-  remove = remove > 0 ? remove : 0
+  remove = remove > 0 ? remove : 0 // No need to chunk the items if there’s only a couple (10k) items.
 
-  // No need to chunk the items if there’s only a couple (10k) items.
-  if (items.length < v8MaxSafeChunkSize) {
+  if (items.length < 10000) {
     parameters = Array.from(items)
     parameters.unshift(start, remove)
-    return [].splice.apply(list, parameters)
+    splice.apply(list, parameters)
+  } else {
+    // Delete `remove` items starting from `start`
+    if (remove) splice.apply(list, [start, remove]) // Insert the items in chunks to not cause stack overflows.
+
+    while (chunkStart < items.length) {
+      parameters = items.slice(chunkStart, chunkStart + 10000)
+      parameters.unshift(start, 0)
+      splice.apply(list, parameters)
+      chunkStart += 10000
+      start += 10000
+    }
   }
-
-  // Delete `remove` items starting from `start`
-  result = [].splice.apply(list, [start, remove])
-
-  // Insert the items in chunks to not cause stack overflows.
-  while (chunkStart < items.length) {
-    parameters = items.slice(chunkStart, chunkStart + v8MaxSafeChunkSize)
-    parameters.unshift(start, 0)
-    ;[].splice.apply(list, parameters)
-
-    chunkStart += v8MaxSafeChunkSize
-    start += v8MaxSafeChunkSize
-  }
-
-  return result
 }
+
+module.exports = chunkedSplice
 
 
 /***/ }),
@@ -19756,7 +20747,8 @@ function chunkedSplice(list, start, remove, items) {
 /***/ 1324:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = classifyCharacter
+"use strict";
+
 
 var markdownLineEndingOrSpace = __nccwpck_require__(9180)
 var unicodePunctuation = __nccwpck_require__(9372)
@@ -19780,19 +20772,21 @@ function classifyCharacter(code) {
   }
 }
 
+module.exports = classifyCharacter
+
 
 /***/ }),
 
 /***/ 8602:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = combineExtensions
+"use strict";
 
-var own = __nccwpck_require__(3500)
-var miniflat = __nccwpck_require__(9042)
+
+var hasOwnProperty = __nccwpck_require__(3500)
 var chunkedSplice = __nccwpck_require__(778)
+var miniflat = __nccwpck_require__(9042)
 
-// Combine several syntax extensions into one.
 function combineExtensions(extensions) {
   var all = {}
   var index = -1
@@ -19811,13 +20805,13 @@ function extension(all, extension) {
   var code
 
   for (hook in extension) {
-    left = own.call(all, hook) ? all[hook] : (all[hook] = {})
+    left = hasOwnProperty.call(all, hook) ? all[hook] : (all[hook] = {})
     right = extension[hook]
 
     for (code in right) {
       left[code] = constructs(
         miniflat(right[code]),
-        own.call(left, code) ? left[code] : []
+        hasOwnProperty.call(left, code) ? left[code] : []
       )
     }
   }
@@ -19835,23 +20829,26 @@ function constructs(list, existing) {
   return existing
 }
 
+module.exports = combineExtensions
+
 
 /***/ }),
 
 /***/ 4845:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = createTokenizer
+"use strict";
+
 
 var assign = __nccwpck_require__(3512)
-
 var markdownLineEnding = __nccwpck_require__(7506)
+var chunkedPush = __nccwpck_require__(4455)
 var chunkedSplice = __nccwpck_require__(778)
-var shallow = __nccwpck_require__(1479)
-var serializeChunks = __nccwpck_require__(4363)
-var sliceChunks = __nccwpck_require__(7271)
-var resolveAll = __nccwpck_require__(2004)
 var miniflat = __nccwpck_require__(9042)
+var resolveAll = __nccwpck_require__(2004)
+var serializeChunks = __nccwpck_require__(4363)
+var shallow = __nccwpck_require__(1479)
+var sliceChunks = __nccwpck_require__(7271)
 
 // Create a tokenizer.
 // Tokenizers deal with one type of data (e.g., containers, flow, text).
@@ -19861,25 +20858,32 @@ var miniflat = __nccwpck_require__(9042)
 // `from` can be given to set the point before the first character, although
 // when further lines are indented, they must be set with `defineSkip`.
 function createTokenizer(parser, initialize, from) {
-  var point = from ? shallow(from) : {line: 1, column: 1, offset: 0}
+  var point = from
+    ? shallow(from)
+    : {
+        line: 1,
+        column: 1,
+        offset: 0
+      }
   var columnStart = {}
   var resolveAllConstructs = []
   var chunks = []
   var stack = []
-  var consumed = true
 
-  // Tools used for tokenizing.
   var effects = {
     consume: consume,
     enter: enter,
     exit: exit,
     attempt: constructFactory(onsuccessfulconstruct),
     check: constructFactory(onsuccessfulcheck),
-    interrupt: constructFactory(onsuccessfulcheck, {interrupt: true}),
-    lazy: constructFactory(onsuccessfulcheck, {lazy: true})
-  }
+    interrupt: constructFactory(onsuccessfulcheck, {
+      interrupt: true
+    }),
+    lazy: constructFactory(onsuccessfulcheck, {
+      lazy: true
+    })
+  } // State and tools for resolving and serializing.
 
-  // State and tools for resolving and serializing.
   var context = {
     previous: null,
     events: [],
@@ -19889,43 +20893,31 @@ function createTokenizer(parser, initialize, from) {
     now: now,
     defineSkip: skip,
     write: write
-  }
+  } // The state function.
 
-  // The state function.
-  var state = initialize.tokenize.call(context, effects)
-
-  // Track which character we expect to be consumed, to catch bugs.
-  var expectedCode
+  var state = initialize.tokenize.call(context, effects) // Track which character we expect to be consumed, to catch bugs.
 
   if (initialize.resolveAll) {
     resolveAllConstructs.push(initialize)
-  }
+  } // Store where we are in the input stream.
 
-  // Store where we are in the input stream.
   point._index = 0
   point._bufferIndex = -1
-
   return context
 
   function write(slice) {
-    chunkedSplice(chunks, chunks.length, 0, slice)
+    chunks = chunkedPush(chunks, slice)
+    main() // Exit if we’re not done, resolve might change stuff.
 
-    main()
-
-    // Exit if we’re not done, resolve might change stuff.
     if (chunks[chunks.length - 1] !== null) {
       return []
     }
 
-    addResult(initialize, 0)
+    addResult(initialize, 0) // Otherwise, resolve, and exit.
 
-    // Otherwise, resolve, and exit.
     context.events = resolveAll(resolveAllConstructs, context.events, context)
-
     return context.events
-  }
-
-  //
+  } //
   // Tools.
   //
 
@@ -19944,26 +20936,23 @@ function createTokenizer(parser, initialize, from) {
   function skip(value) {
     columnStart[value.line] = value.column
     accountForPotentialSkip()
-  }
-
-  //
+  } //
   // State management.
   //
-
   // Main loop (note that `_index` and `_bufferIndex` in `point` are modified by
   // `consume`).
   // Here is where we walk through the chunks, which either include strings of
   // several characters, or numerical character codes.
   // The reason to do this in a loop instead of a call is so the stack can
   // drain.
+
   function main() {
     var chunkIndex
     var chunk
 
     while (point._index < chunks.length) {
-      chunk = chunks[point._index]
+      chunk = chunks[point._index] // If we’re in a buffer chunk, loop through it.
 
-      // If we’re in a buffer chunk, loop through it.
       if (typeof chunk === 'string') {
         chunkIndex = point._index
 
@@ -19981,17 +20970,12 @@ function createTokenizer(parser, initialize, from) {
         go(chunk)
       }
     }
-  }
+  } // Deal with one code.
 
-  // Deal with one code.
   function go(code) {
-    consumed = undefined
-
-    expectedCode = code
     state = state(code)
-  }
+  } // Move a character forward.
 
-  // Move a character forward.
   function consume(code) {
     if (markdownLineEnding(code)) {
       point.line++
@@ -20001,73 +20985,55 @@ function createTokenizer(parser, initialize, from) {
     } else if (code !== -1) {
       point.column++
       point.offset++
-    }
+    } // Not in a string chunk.
 
-    // Not in a string chunk.
     if (point._bufferIndex < 0) {
       point._index++
     } else {
-      point._bufferIndex++
+      point._bufferIndex++ // At end of string chunk.
 
-      // At end of string chunk.
       if (point._bufferIndex === chunks[point._index].length) {
         point._bufferIndex = -1
         point._index++
       }
-    }
+    } // Expose the previous character.
 
-    // Expose the previous character.
-    context.previous = code
+    context.previous = code // Mark as consumed.
+  } // Start a token.
 
-    // Mark as consumed.
-    consumed = true
-  }
-
-  // Start a token.
   function enter(type, fields) {
     var token = fields || {}
     token.type = type
     token.start = now()
-
     context.events.push(['enter', token, context])
-
     stack.push(token)
-
     return token
-  }
+  } // Stop a token.
 
-  // Stop a token.
   function exit(type) {
     var token = stack.pop()
     token.end = now()
-
     context.events.push(['exit', token, context])
-
     return token
-  }
+  } // Use results.
 
-  // Use results.
   function onsuccessfulconstruct(construct, info) {
     addResult(construct, info.from)
-  }
+  } // Discard results.
 
-  // Discard results.
   function onsuccessfulcheck(construct, info) {
     info.restore()
-  }
+  } // Factory to attempt/check/interrupt.
 
-  // Factory to attempt/check/interrupt.
   function constructFactory(onreturn, fields) {
-    return hook
-
-    // Handle either an object mapping codes to constructs, a list of
+    return hook // Handle either an object mapping codes to constructs, a list of
     // constructs, or a single construct.
+
     function hook(constructs, returnState, bogusState) {
       var listOfConstructs
       var constructIndex
       var currentConstruct
       var info
-
       return constructs.tokenize || 'length' in constructs
         ? handleListOfConstructs(miniflat(constructs))
         : handleMapOfConstructs
@@ -20075,9 +21041,9 @@ function createTokenizer(parser, initialize, from) {
       function handleMapOfConstructs(code) {
         if (code in constructs || null in constructs) {
           return handleListOfConstructs(
-            /* istanbul ignore next - `null` is used by some extensions */
             constructs.null
-              ? miniflat(constructs[code]).concat(miniflat(constructs.null))
+              ? /* c8 ignore next */
+                miniflat(constructs[code]).concat(miniflat(constructs.null))
               : constructs[code]
           )(code)
         }
@@ -20106,6 +21072,13 @@ function createTokenizer(parser, initialize, from) {
             context.currentConstruct = construct
           }
 
+          if (
+            construct.name &&
+            context.parser.constructs.disable.null.indexOf(construct.name) > -1
+          ) {
+            return nok()
+          }
+
           return construct.tokenize.call(
             fields ? assign({}, context, fields) : context,
             effects,
@@ -20116,13 +21089,11 @@ function createTokenizer(parser, initialize, from) {
       }
 
       function ok(code) {
-        consumed = true
         onreturn(currentConstruct, info)
         return returnState
       }
 
       function nok(code) {
-        consumed = true
         info.restore()
 
         if (++constructIndex < listOfConstructs.length) {
@@ -20159,8 +21130,10 @@ function createTokenizer(parser, initialize, from) {
     var startCurrentConstruct = context.currentConstruct
     var startEventsIndex = context.events.length
     var startStack = Array.from(stack)
-
-    return {restore: restore, from: startEventsIndex}
+    return {
+      restore: restore,
+      from: startEventsIndex
+    }
 
     function restore() {
       point = startPoint
@@ -20180,13 +21153,16 @@ function createTokenizer(parser, initialize, from) {
   }
 }
 
+module.exports = createTokenizer
+
 
 /***/ }),
 
 /***/ 9042:
 /***/ ((module) => {
 
-module.exports = miniflat
+"use strict";
+
 
 function miniflat(value) {
   return value === null || value === undefined
@@ -20196,16 +21172,19 @@ function miniflat(value) {
     : [value]
 }
 
+module.exports = miniflat
+
 
 /***/ }),
 
 /***/ 6985:
 /***/ ((module) => {
 
-module.exports = movePoint
+"use strict";
 
-// Note! `move` only works inside lines! It’s not possible to move past other
+
 // chunks (replacement characters, tabs, or line endings).
+
 function movePoint(point, offset) {
   point.column += offset
   point.offset += offset
@@ -20213,22 +21192,22 @@ function movePoint(point, offset) {
   return point
 }
 
+module.exports = movePoint
+
 
 /***/ }),
 
 /***/ 712:
 /***/ ((module) => {
 
-module.exports = normalizeIdentifier
+"use strict";
+
 
 function normalizeIdentifier(value) {
   return (
-    value
-      // Collapse Markdown whitespace.
-      .replace(/[\t\n\r ]+/g, ' ')
-      // Trim.
-      .replace(/^ | $/g, '')
-      // Some characters are considered “uppercase”, but if their lowercase
+    value // Collapse Markdown whitespace.
+      .replace(/[\t\n\r ]+/g, ' ') // Trim.
+      .replace(/^ | $/g, '') // Some characters are considered “uppercase”, but if their lowercase
       // counterpart is uppercased will result in a different uppercase
       // character.
       // Hence, to get that form, we perform both lower- and uppercase.
@@ -20239,13 +21218,16 @@ function normalizeIdentifier(value) {
   )
 }
 
+module.exports = normalizeIdentifier
+
 
 /***/ }),
 
 /***/ 3722:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = prefixSize
+"use strict";
+
 
 var sizeChunks = __nccwpck_require__(5041)
 
@@ -20255,22 +21237,28 @@ function prefixSize(events, type) {
   return sizeChunks(tail[2].sliceStream(tail[1]))
 }
 
+module.exports = prefixSize
+
 
 /***/ }),
 
 /***/ 1028:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = regexCheck
+"use strict";
+
 
 var fromCharCode = __nccwpck_require__(3531)
 
 function regexCheck(regex) {
   return check
+
   function check(code) {
     return regex.test(fromCharCode(code))
   }
 }
+
+module.exports = regexCheck
 
 
 /***/ }),
@@ -20278,7 +21266,8 @@ function regexCheck(regex) {
 /***/ 2004:
 /***/ ((module) => {
 
-module.exports = resolveAll
+"use strict";
+
 
 function resolveAll(constructs, events, context) {
   var called = []
@@ -20297,13 +21286,16 @@ function resolveAll(constructs, events, context) {
   return events
 }
 
+module.exports = resolveAll
+
 
 /***/ }),
 
 /***/ 6214:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = safeFromInt
+"use strict";
+
 
 var fromCharCode = __nccwpck_require__(3531)
 
@@ -20314,16 +21306,12 @@ function safeFromInt(value, base) {
     // C0 except for HT, LF, FF, CR, space
     code < 9 ||
     code === 11 ||
-    (code > 13 && code < 32) ||
-    // Control character (DEL) of the basic block and C1 controls.
-    (code > 126 && code < 160) ||
-    // Lone high surrogates and low surrogates.
-    (code > 55295 && code < 57344) ||
-    // Noncharacters.
+    (code > 13 && code < 32) || // Control character (DEL) of the basic block and C1 controls.
+    (code > 126 && code < 160) || // Lone high surrogates and low surrogates.
+    (code > 55295 && code < 57344) || // Noncharacters.
     (code > 64975 && code < 65008) ||
     (code & 65535) === 65535 ||
-    (code & 65535) === 65534 ||
-    // Out of range
+    (code & 65535) === 65534 || // Out of range
     code > 1114111
   ) {
     return '\uFFFD'
@@ -20332,13 +21320,16 @@ function safeFromInt(value, base) {
   return fromCharCode(code)
 }
 
+module.exports = safeFromInt
+
 
 /***/ }),
 
 /***/ 4363:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = serializeChunks
+"use strict";
+
 
 var fromCharCode = __nccwpck_require__(3531)
 
@@ -20377,13 +21368,16 @@ function serializeChunks(chunks) {
   return result.join('')
 }
 
+module.exports = serializeChunks
+
 
 /***/ }),
 
 /***/ 1479:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = shallow
+"use strict";
+
 
 var assign = __nccwpck_require__(3512)
 
@@ -20391,16 +21385,19 @@ function shallow(object) {
   return assign({}, object)
 }
 
+module.exports = shallow
+
 
 /***/ }),
 
 /***/ 5041:
 /***/ ((module) => {
 
-module.exports = sizeChunks
+"use strict";
 
-// Measure the number of character codes in chunks.
+
 // Counts tabs based on their expanded size, and CR+LF as one character.
+
 function sizeChunks(chunks) {
   var index = -1
   var size = 0
@@ -20412,13 +21409,16 @@ function sizeChunks(chunks) {
   return size
 }
 
+module.exports = sizeChunks
+
 
 /***/ }),
 
 /***/ 7271:
 /***/ ((module) => {
 
-module.exports = sliceChunks
+"use strict";
+
 
 function sliceChunks(chunks, token) {
   var startIndex = token.start._index
@@ -20444,16 +21444,18 @@ function sliceChunks(chunks, token) {
   return view
 }
 
+module.exports = sliceChunks
+
 
 /***/ }),
 
 /***/ 14:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-module.exports = subtokenize
+"use strict";
+
 
 var assign = __nccwpck_require__(3512)
-
 var chunkedSplice = __nccwpck_require__(778)
 var shallow = __nccwpck_require__(1479)
 
@@ -20473,10 +21475,9 @@ function subtokenize(events) {
       index = jumps[index]
     }
 
-    event = events[index]
-
-    // Add a hook for the GFM tasklist extension, which needs to know if text
+    event = events[index] // Add a hook for the GFM tasklist extension, which needs to know if text
     // is in the first content of a list item.
+
     if (
       index &&
       event[1].type === 'chunkFlow' &&
@@ -20507,17 +21508,15 @@ function subtokenize(events) {
           }
         }
       }
-    }
+    } // Enter.
 
-    // Enter.
     if (event[0] === 'enter') {
       if (event[1].contentType) {
         assign(jumps, subcontent(events, index))
         index = jumps[index]
         more = true
       }
-    }
-    // Exit.
+    } // Exit.
     else if (event[1]._container || event[1]._movePreviousLineEndings) {
       otherIndex = index
       lineIndex = undefined
@@ -20544,9 +21543,8 @@ function subtokenize(events) {
 
       if (lineIndex) {
         // Fix position.
-        event[1].end = shallow(events[lineIndex][1].start)
+        event[1].end = shallow(events[lineIndex][1].start) // Switch container exit w/ line endings.
 
-        // Switch container exit w/ line endings.
         parameters = events.slice(lineIndex, index)
         parameters.unshift(event)
         chunkedSplice(events, lineIndex, index - lineIndex + 1, parameters)
@@ -20572,10 +21570,9 @@ function subcontent(events, eventIndex) {
   var index
   var entered
   var end
-  var adjust
-
-  // Loop forward through the linked tokens to pass them in order to the
+  var adjust // Loop forward through the linked tokens to pass them in order to the
   // subtokenizer.
+
   while (token) {
     // Find the position of the event for this token.
     while (events[++startPosition][1] !== token) {
@@ -20604,15 +21601,13 @@ function subcontent(events, eventIndex) {
       if (token.isInFirstContentOfListItem) {
         tokenizer._gfmTasklistFirstContentOfListItem = undefined
       }
-    }
+    } // Unravel the next token.
 
-    // Unravel the next token.
     previous = token
     token = token.next
-  }
-
-  // Now, loop back through all events (and linked tokens), to figure out which
+  } // Now, loop back through all events (and linked tokens), to figure out which
   // parts belong where.
+
   token = previous
   index = childEvents.length
 
@@ -20628,7 +21623,6 @@ function subcontent(events, eventIndex) {
       childEvents[index][1].start.line !== childEvents[index][1].end.line
     ) {
       add(childEvents.slice(index + 1, end))
-
       // Help GC.
       token._tokenizer = token.next = undefined
       token = token.previous
@@ -20637,11 +21631,9 @@ function subcontent(events, eventIndex) {
   }
 
   // Help GC.
-  tokenizer.events = token._tokenizer = token.next = undefined
+  tokenizer.events = token._tokenizer = token.next = undefined // Do head:
 
-  // Do head:
   add(childEvents.slice(0, end))
-
   index = -1
   adjust = 0
 
@@ -20658,6 +21650,8 @@ function subcontent(events, eventIndex) {
     chunkedSplice(events, start, 2, slice)
   }
 }
+
+module.exports = subtokenize
 
 
 /***/ }),
@@ -21620,7 +22614,7 @@ var y = d * 365.25;
  * @api public
  */
 
-module.exports = function(val, options) {
+module.exports = function (val, options) {
   options = options || {};
   var type = typeof val;
   if (type === 'string' && val.length > 0) {
@@ -23676,32 +24670,6 @@ function repeat(str, num) {
 
 /***/ }),
 
-/***/ 5198:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var path = __nccwpck_require__(5622);
-
-function replaceExt(npath, ext) {
-  if (typeof npath !== 'string') {
-    return npath;
-  }
-
-  if (npath.length === 0) {
-    return npath;
-  }
-
-  var nFileName = path.basename(npath, path.extname(npath)) + ext;
-  return path.join(path.dirname(npath), nFileName);
-}
-
-module.exports = replaceExt;
-
-
-/***/ }),
-
 /***/ 8293:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -24386,9 +25354,9 @@ function pipelineParse(p, ctx) {
 function pipelineRun(p, ctx, next) {
   p.run(ctx.tree, ctx.file, done)
 
-  function done(err, tree, file) {
-    if (err) {
-      next(err)
+  function done(error, tree, file) {
+    if (error) {
+      next(error)
     } else {
       ctx.tree = tree
       ctx.file = file
@@ -24399,14 +25367,13 @@ function pipelineRun(p, ctx, next) {
 
 function pipelineStringify(p, ctx) {
   var result = p.stringify(ctx.tree, ctx.file)
-  var file = ctx.file
 
   if (result === undefined || result === null) {
     // Empty.
   } else if (typeof result === 'string' || buffer(result)) {
-    file.contents = result
+    ctx.file.contents = result
   } else {
-    file.result = result
+    ctx.file.result = result
   }
 }
 
@@ -24415,8 +25382,8 @@ function unified() {
   var attachers = []
   var transformers = trough()
   var namespace = {}
-  var frozen = false
   var freezeIndex = -1
+  var frozen
 
   // Data management.
   processor.data = data
@@ -24442,10 +25409,9 @@ function unified() {
   // Create a new processor based on the processor in the current scope.
   function processor() {
     var destination = unified()
-    var length = attachers.length
     var index = -1
 
-    while (++index < length) {
+    while (++index < attachers.length) {
       destination.use.apply(null, attachers[index])
     }
 
@@ -24463,8 +25429,6 @@ function unified() {
   // In essence, always invoke this when exporting a processor.
   function freeze() {
     var values
-    var plugin
-    var options
     var transformer
 
     if (frozen) {
@@ -24473,19 +25437,16 @@ function unified() {
 
     while (++freezeIndex < attachers.length) {
       values = attachers[freezeIndex]
-      plugin = values[0]
-      options = values[1]
-      transformer = null
 
-      if (options === false) {
+      if (values[1] === false) {
         continue
       }
 
-      if (options === true) {
+      if (values[1] === true) {
         values[1] = undefined
       }
 
-      transformer = plugin.apply(processor, values.slice(1))
+      transformer = values[0].apply(processor, values.slice(1))
 
       if (typeof transformer === 'function') {
         transformers.use(transformer)
@@ -24505,9 +25466,7 @@ function unified() {
       // Set `key`.
       if (arguments.length === 2) {
         assertUnfrozen('data', frozen)
-
         namespace[key] = value
-
         return processor
       }
 
@@ -24581,16 +25540,12 @@ function unified() {
     }
 
     function addList(plugins) {
-      var length
-      var index
+      var index = -1
 
       if (plugins === null || plugins === undefined) {
         // Empty.
       } else if (typeof plugins === 'object' && 'length' in plugins) {
-        length = plugins.length
-        index = -1
-
-        while (++index < length) {
+        while (++index < plugins.length) {
           add(plugins[index])
         }
       } else {
@@ -24603,7 +25558,7 @@ function unified() {
 
       if (entry) {
         if (plain(entry[1]) && plain(value)) {
-          value = extend(entry[1], value)
+          value = extend(true, entry[1], value)
         }
 
         entry[1] = value
@@ -24614,15 +25569,11 @@ function unified() {
   }
 
   function find(plugin) {
-    var length = attachers.length
     var index = -1
-    var entry
 
-    while (++index < length) {
-      entry = attachers[index]
-
-      if (entry[0] === plugin) {
-        return entry
+    while (++index < attachers.length) {
+      if (attachers[index][0] === plugin) {
+        return attachers[index]
       }
     }
   }
@@ -24664,10 +25615,10 @@ function unified() {
     function executor(resolve, reject) {
       transformers.run(node, vfile(file), done)
 
-      function done(err, tree, file) {
+      function done(error, tree, file) {
         tree = tree || node
-        if (err) {
-          reject(err)
+        if (error) {
+          reject(error)
         } else if (resolve) {
           resolve(tree)
         } else {
@@ -24680,8 +25631,8 @@ function unified() {
   // Run transforms on a unist node representation of a file (in string or
   // vfile representation), sync.
   function runSync(node, file) {
-    var complete = false
     var result
+    var complete
 
     run(node, file, done)
 
@@ -24689,10 +25640,10 @@ function unified() {
 
     return result
 
-    function done(err, tree) {
+    function done(error, tree) {
       complete = true
-      bail(err)
       result = tree
+      bail(error)
     }
   }
 
@@ -24734,9 +25685,9 @@ function unified() {
 
       pipeline.run(processor, {file: file}, done)
 
-      function done(err) {
-        if (err) {
-          reject(err)
+      function done(error) {
+        if (error) {
+          reject(error)
         } else if (resolve) {
           resolve(file)
         } else {
@@ -24748,8 +25699,8 @@ function unified() {
 
   // Process the given document (in string or vfile representation), sync.
   function processSync(doc) {
-    var complete = false
     var file
+    var complete
 
     freeze()
     assertParser('processSync', processor.Parser)
@@ -24762,9 +25713,9 @@ function unified() {
 
     return file
 
-    function done(err) {
+    function done(error) {
       complete = true
-      bail(err)
+      bail(error)
     }
   }
 }
@@ -24905,7 +25856,7 @@ function allFactory(test) {
     var key
 
     for (key in test) {
-      if (node[key] !== test[key]) return
+      if (node[key] !== test[key]) return false
     }
 
     return true
@@ -24930,6 +25881,8 @@ function anyFactory(tests) {
         return true
       }
     }
+
+    return false
   }
 }
 
@@ -24939,7 +25892,7 @@ function typeFactory(test) {
   return type
 
   function type(node) {
-    return node && node.type === test
+    return Boolean(node && node.type === test)
   }
 }
 
@@ -25366,48 +26319,66 @@ function parseOrigin(origin) {
 
 /***/ }),
 
-/***/ 2136:
+/***/ 4860:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
-var path = __nccwpck_require__(5622)
-var replace = __nccwpck_require__(5198)
+module.exports = __nccwpck_require__(77)
+
+
+/***/ }),
+
+/***/ 9523:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+var p = __nccwpck_require__(9239)
+var proc = __nccwpck_require__(6070)
 var buffer = __nccwpck_require__(5625)
 
 module.exports = VFile
 
 var own = {}.hasOwnProperty
-var proto = VFile.prototype
 
 // Order of setting (least specific to most), we need this because otherwise
 // `{stem: 'a', path: '~/b.js'}` would throw, as a path is needed before a
 // stem can be set.
 var order = ['history', 'path', 'basename', 'stem', 'extname', 'dirname']
 
-proto.toString = toString
+VFile.prototype.toString = toString
 
 // Access full path (`~/index.min.js`).
-Object.defineProperty(proto, 'path', {get: getPath, set: setPath})
+Object.defineProperty(VFile.prototype, 'path', {get: getPath, set: setPath})
 
 // Access parent path (`~`).
-Object.defineProperty(proto, 'dirname', {get: getDirname, set: setDirname})
+Object.defineProperty(VFile.prototype, 'dirname', {
+  get: getDirname,
+  set: setDirname
+})
 
 // Access basename (`index.min.js`).
-Object.defineProperty(proto, 'basename', {get: getBasename, set: setBasename})
+Object.defineProperty(VFile.prototype, 'basename', {
+  get: getBasename,
+  set: setBasename
+})
 
 // Access extname (`.js`).
-Object.defineProperty(proto, 'extname', {get: getExtname, set: setExtname})
+Object.defineProperty(VFile.prototype, 'extname', {
+  get: getExtname,
+  set: setExtname
+})
 
 // Access stem (`index.min`).
-Object.defineProperty(proto, 'stem', {get: getStem, set: setStem})
+Object.defineProperty(VFile.prototype, 'stem', {get: getStem, set: setStem})
 
 // Construct a new file.
 function VFile(options) {
   var prop
   var index
-  var length
 
   if (!options) {
     options = {}
@@ -25424,13 +26395,12 @@ function VFile(options) {
   this.data = {}
   this.messages = []
   this.history = []
-  this.cwd = process.cwd()
+  this.cwd = proc.cwd()
 
   // Set path related properties in the correct order.
   index = -1
-  length = order.length
 
-  while (++index < length) {
+  while (++index < order.length) {
     prop = order[index]
 
     if (own.call(options, prop)) {
@@ -25440,7 +26410,7 @@ function VFile(options) {
 
   // Set non-path related properties.
   for (prop in options) {
-    if (order.indexOf(prop) === -1) {
+    if (order.indexOf(prop) < 0) {
       this[prop] = options[prop]
     }
   }
@@ -25453,76 +26423,73 @@ function getPath() {
 function setPath(path) {
   assertNonEmpty(path, 'path')
 
-  if (path !== this.path) {
+  if (this.path !== path) {
     this.history.push(path)
   }
 }
 
 function getDirname() {
-  return typeof this.path === 'string' ? path.dirname(this.path) : undefined
+  return typeof this.path === 'string' ? p.dirname(this.path) : undefined
 }
 
 function setDirname(dirname) {
   assertPath(this.path, 'dirname')
-  this.path = path.join(dirname || '', this.basename)
+  this.path = p.join(dirname || '', this.basename)
 }
 
 function getBasename() {
-  return typeof this.path === 'string' ? path.basename(this.path) : undefined
+  return typeof this.path === 'string' ? p.basename(this.path) : undefined
 }
 
 function setBasename(basename) {
   assertNonEmpty(basename, 'basename')
   assertPart(basename, 'basename')
-  this.path = path.join(this.dirname || '', basename)
+  this.path = p.join(this.dirname || '', basename)
 }
 
 function getExtname() {
-  return typeof this.path === 'string' ? path.extname(this.path) : undefined
+  return typeof this.path === 'string' ? p.extname(this.path) : undefined
 }
 
 function setExtname(extname) {
-  var ext = extname || ''
-
-  assertPart(ext, 'extname')
+  assertPart(extname, 'extname')
   assertPath(this.path, 'extname')
 
-  if (ext) {
-    if (ext.charAt(0) !== '.') {
+  if (extname) {
+    if (extname.charCodeAt(0) !== 46 /* `.` */) {
       throw new Error('`extname` must start with `.`')
     }
 
-    if (ext.indexOf('.', 1) !== -1) {
+    if (extname.indexOf('.', 1) > -1) {
       throw new Error('`extname` cannot contain multiple dots')
     }
   }
 
-  this.path = replace(this.path, ext)
+  this.path = p.join(this.dirname, this.stem + (extname || ''))
 }
 
 function getStem() {
   return typeof this.path === 'string'
-    ? path.basename(this.path, this.extname)
+    ? p.basename(this.path, this.extname)
     : undefined
 }
 
 function setStem(stem) {
   assertNonEmpty(stem, 'stem')
   assertPart(stem, 'stem')
-  this.path = path.join(this.dirname || '', stem + (this.extname || ''))
+  this.path = p.join(this.dirname || '', stem + (this.extname || ''))
 }
 
 // Get the value of the file.
 function toString(encoding) {
-  var value = this.contents || ''
-  return buffer(value) ? value.toString(encoding) : String(value)
+  return (this.contents || '').toString(encoding)
 }
 
-// Assert that `part` is not a path (i.e., does not contain `path.sep`).
+// Assert that `part` is not a path (i.e., does not contain `p.sep`).
 function assertPart(part, name) {
-  if (part.indexOf(path.sep) !== -1) {
+  if (part && part.indexOf(p.sep) > -1) {
     throw new Error(
-      '`' + name + '` cannot be a path: did not expect `' + path.sep + '`'
+      '`' + name + '` cannot be a path: did not expect `' + p.sep + '`'
     )
   }
 }
@@ -25544,32 +26511,29 @@ function assertPath(path, name) {
 
 /***/ }),
 
-/***/ 4860:
+/***/ 77:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
 var VMessage = __nccwpck_require__(4108)
-var VFile = __nccwpck_require__(2136)
+var VFile = __nccwpck_require__(9523)
 
 module.exports = VFile
 
-var proto = VFile.prototype
-
-proto.message = message
-proto.info = info
-proto.fail = fail
+VFile.prototype.message = message
+VFile.prototype.info = info
+VFile.prototype.fail = fail
 
 // Create a message with `reason` at `position`.
 // When an error is passed in as `reason`, copies the stack.
 function message(reason, position, origin) {
-  var filePath = this.path
   var message = new VMessage(reason, position, origin)
 
-  if (filePath) {
-    message.name = filePath + ':' + message.name
-    message.file = filePath
+  if (this.path) {
+    message.name = this.path + ':' + message.name
+    message.file = this.path
   }
 
   message.fatal = false
@@ -25597,6 +26561,28 @@ function info() {
 
   return message
 }
+
+
+/***/ }),
+
+/***/ 9239:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+module.exports = __nccwpck_require__(5622)
+
+
+/***/ }),
+
+/***/ 6070:
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = process
 
 
 /***/ }),
