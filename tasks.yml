@@ -150,6 +150,7 @@
     - comment:yes-maintainers
 - if: on:post-unlabeled:phase/yes
   then:
+    - remove-labels:yes/*
     - minimize-comments:yes-maintainers
     - forget-comments:yes-maintainers
 
