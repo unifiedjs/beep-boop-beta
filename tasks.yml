@@ -141,6 +141,13 @@
   if-not: has-labels:no/*
   then: remove-labels:phase/no
 
+# Yep.
+- if: on:post-labeled:yes/*
+  then: add-labels:phase/yes
+- if: on:post-unlabeled:yes/*
+  if-not: has-labels:yes/*
+  then: remove-labels:phase/yes
+
 # Confirmed!
 - if: on:post-labeled:phase/yes
   then:
