@@ -428,7 +428,7 @@ async function comment(ctx, event, value) {
         }
       `
         : `
-        mutation($body: String!, $id: String!) {
+        mutation($body: String!, $id: ID!) {
           addComment(input: { body: $body, subjectId: $id }) { commentEdge { node { id } } }
         }
       `,
@@ -444,6 +444,7 @@ async function comment(ctx, event, value) {
     // <https://github.com/unifiedjs/beep-boop-beta/issues/5>
     console.log()
     console.log('data:', result.data)
+    console.log('post:', post)
     console.log('id:', id)
     console.log('body:', body)
     throw new Error('Could not post comment `' + templateId + '`')
@@ -2180,7 +2181,7 @@ function render() {
     u('paragraph', [
       u(
         'text',
-        'Hi! This was closed. Team: If this was merged, please describe when this is likely to be released. Otherhwise, please add one of the '
+        'Hi! This was closed. Team: If this was merged, please describe when this is likely to be released. Otherwise, please add one of the '
       ),
       u('inlineCode', 'no/*'),
       u('text', ' labels.')
