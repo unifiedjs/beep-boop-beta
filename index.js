@@ -13,7 +13,7 @@ var github = __nccwpck_require__(5438)
 var core = __nccwpck_require__(2186)
 var run = __nccwpck_require__(3850)
 
-var posts = ['issues', 'pull_request']
+var posts = ['issues', 'pull_request', 'pull_request_target']
 
 var postActions = [
   'opened',
