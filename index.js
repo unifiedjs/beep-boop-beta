@@ -75,6 +75,7 @@ function toEvent(context) {
     throw new Error('Can’t handle GH action `' + action + '`')
   }
 
+  console.log('!', payload);
   return {
     eventSource: 'post',
     eventName: action,
