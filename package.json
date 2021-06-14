@@ -19,7 +19,7 @@
   ],
   "devDependencies": {
     "@actions/core": "^1.0.0",
-    "@actions/github": "^4.0.0",
+    "@actions/github": "^5.0.0",
     "@vercel/ncc": "^0.28.0",
     "js-yaml": "^4.0.0",
     "mdast-util-to-string": "^3.0.0",
@@ -34,7 +34,7 @@
     "remark-preset-wooorm": "^8.0.0",
     "remark-stringify": "^9.0.0",
     "similarity": "^1.0.0",
-    "stringify-entities": "^3.0.0",
+    "stringify-entities": "^4.0.0",
     "unified": "^9.0.0",
     "unist-builder": "^3.0.0",
     "unist-util-is": "^5.0.0",
