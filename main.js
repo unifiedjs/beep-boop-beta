@@ -5,7 +5,9 @@ import {custom} from './lib/custom/index.js'
 import {renderers} from './lib/renderers/index.js'
 
 beep({
-  tasks: yaml.load(String(fs.readFileSync('tasks.yml'))),
+  tasks: yaml.load(
+    String(fs.readFileSync(new URL('./tasks.yml', import.meta.url)))
+  ),
   plugins: [custom],
   renderers
 })

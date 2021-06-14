@@ -31345,7 +31345,9 @@ const renderers = {
 
 
 beep({
-  tasks: js_yaml.load(String(external_fs_.readFileSync('tasks.yml'))),
+  tasks: js_yaml.load(
+    String(external_fs_.readFileSync(__nccwpck_require__.ab + "tasks.yml"))
+  ),
   plugins: [custom],
   renderers: renderers
 })
