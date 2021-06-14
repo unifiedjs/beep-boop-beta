@@ -22,7 +22,7 @@
     "@actions/github": "^4.0.0",
     "@vercel/ncc": "^0.28.0",
     "js-yaml": "^4.0.0",
-    "mdast-util-to-string": "^2.0.0",
+    "mdast-util-to-string": "^3.0.0",
     "minimatch": "^3.0.0",
     "ms": "^2.0.0",
     "node-fetch": "^2.0.0",
@@ -36,12 +36,12 @@
     "similarity": "^1.0.0",
     "stringify-entities": "^3.0.0",
     "unified": "^9.0.0",
-    "unist-builder": "^2.0.0",
-    "unist-util-is": "^4.0.0",
-    "unist-util-visit": "^2.0.0",
+    "unist-builder": "^3.0.0",
+    "unist-util-is": "^5.0.0",
+    "unist-util-visit": "^3.0.0",
     "vfile": "^4.0.0",
     "vfile-matter": "^2.0.0",
-    "xo": "^0.38.0"
+    "xo": "^0.39.0"
   },
   "scripts": {
     "format": "remark . -qfo && prettier . --write && xo --fix",
@@ -57,18 +57,10 @@
     "trailingComma": "none"
   },
   "xo": {
-    "esnext": false,
     "prettier": true,
     "rules": {
-      "camelcase": "off",
       "complexity": "off",
-      "guard-for-in": "off",
-      "no-await-in-loop": "off",
-      "unicorn/explicit-length-check": "off",
-      "unicorn/no-fn-reference-in-iterator": "off",
-      "unicorn/prefer-number-properties": "off",
-      "unicorn/prefer-set-has": "off",
-      "unicorn/prefer-type-error": "off"
+      "no-await-in-loop": "off"
     },
     "ignores": [
       "index.cjs"

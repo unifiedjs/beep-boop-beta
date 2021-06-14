@@ -8987,7 +8987,7 @@ function toAlignment(value) {
 module.exports = findAndReplace
 
 var visit = __nccwpck_require__(3246)
-var convert = __nccwpck_require__(4070)
+var convert = __nccwpck_require__(475)
 var escape = __nccwpck_require__(8691)
 
 var splice = [].splice
@@ -9166,6 +9166,91 @@ function toFunction(replace) {
 
 /***/ }),
 
+/***/ 475:
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = convert
+
+function convert(test) {
+  if (test == null) {
+    return ok
+  }
+
+  if (typeof test === 'string') {
+    return typeFactory(test)
+  }
+
+  if (typeof test === 'object') {
+    return 'length' in test ? anyFactory(test) : allFactory(test)
+  }
+
+  if (typeof test === 'function') {
+    return test
+  }
+
+  throw new Error('Expected function, string, or object as test')
+}
+
+// Utility assert each property in `test` is represented in `node`, and each
+// values are strictly equal.
+function allFactory(test) {
+  return all
+
+  function all(node) {
+    var key
+
+    for (key in test) {
+      if (node[key] !== test[key]) return false
+    }
+
+    return true
+  }
+}
+
+function anyFactory(tests) {
+  var checks = []
+  var index = -1
+
+  while (++index < tests.length) {
+    checks[index] = convert(tests[index])
+  }
+
+  return any
+
+  function any() {
+    var index = -1
+
+    while (++index < checks.length) {
+      if (checks[index].apply(this, arguments)) {
+        return true
+      }
+    }
+
+    return false
+  }
+}
+
+// Utility to convert a string into a function which checks a given node’s type
+// for said string.
+function typeFactory(test) {
+  return type
+
+  function type(node) {
+    return Boolean(node && node.type === test)
+  }
+}
+
+// Utility to return true.
+function ok() {
+  return true
+}
+
+
+/***/ }),
+
 /***/ 6869:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -9176,7 +9261,7 @@ module.exports = fromMarkdown
 
 // These three are compiled away in the `dist/`
 
-var toString = __nccwpck_require__(5789)
+var toString = __nccwpck_require__(3162)
 var assign = __nccwpck_require__(3512)
 var own = __nccwpck_require__(3500)
 var normalizeIdentifier = __nccwpck_require__(712)
@@ -10004,6 +10089,43 @@ function extension(config, extension) {
 
 
 module.exports = __nccwpck_require__(6869)
+
+
+/***/ }),
+
+/***/ 3162:
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = toString
+
+// Get the text content of a node.
+// Prefer the node’s plain-text fields, otherwise serialize its children,
+// and if the given value is an array, serialize the nodes in it.
+function toString(node) {
+  return (
+    (node &&
+      (node.value ||
+        node.alt ||
+        node.title ||
+        ('children' in node && all(node.children)) ||
+        ('length' in node && all(node)))) ||
+    ''
+  )
+}
+
+function all(values) {
+  var result = []
+  var index = -1
+
+  while (++index < values.length) {
+    result[index] = toString(values[index])
+  }
+
+  return result.join('')
+}
 
 
 /***/ }),
@@ -12003,7 +12125,7 @@ function formatCodeAsIndented(node, context) {
 
 module.exports = formatHeadingAsSetext
 
-var toString = __nccwpck_require__(5789)
+var toString = __nccwpck_require__(7949)
 
 function formatHeadingAsSetext(node, context) {
   return (
@@ -12019,7 +12141,7 @@ function formatHeadingAsSetext(node, context) {
 
 module.exports = formatLinkAsAutolink
 
-var toString = __nccwpck_require__(5789)
+var toString = __nccwpck_require__(7949)
 
 function formatLinkAsAutolink(node, context) {
   var raw = toString(node)
@@ -12294,7 +12416,7 @@ function escapeBackslashes(value, after) {
 
 /***/ }),
 
-/***/ 5789:
+/***/ 7949:
 /***/ ((module) => {
 
 "use strict";
@@ -23778,164 +23900,6 @@ function assertDone(name, asyncName, complete) {
 
 /***/ }),
 
-/***/ 2637:
-/***/ ((module) => {
-
-"use strict";
-
-
-module.exports = u
-
-function u(type, props, value) {
-  var node
-
-  if (
-    (value === null || value === undefined) &&
-    (typeof props !== 'object' || Array.isArray(props))
-  ) {
-    value = props
-    props = {}
-  }
-
-  node = Object.assign({type: String(type)}, props)
-
-  if (Array.isArray(value)) {
-    node.children = value
-  } else if (value !== null && value !== undefined) {
-    node.value = String(value)
-  }
-
-  return node
-}
-
-
-/***/ }),
-
-/***/ 4070:
-/***/ ((module) => {
-
-"use strict";
-
-
-module.exports = convert
-
-function convert(test) {
-  if (test == null) {
-    return ok
-  }
-
-  if (typeof test === 'string') {
-    return typeFactory(test)
-  }
-
-  if (typeof test === 'object') {
-    return 'length' in test ? anyFactory(test) : allFactory(test)
-  }
-
-  if (typeof test === 'function') {
-    return test
-  }
-
-  throw new Error('Expected function, string, or object as test')
-}
-
-// Utility assert each property in `test` is represented in `node`, and each
-// values are strictly equal.
-function allFactory(test) {
-  return all
-
-  function all(node) {
-    var key
-
-    for (key in test) {
-      if (node[key] !== test[key]) return false
-    }
-
-    return true
-  }
-}
-
-function anyFactory(tests) {
-  var checks = []
-  var index = -1
-
-  while (++index < tests.length) {
-    checks[index] = convert(tests[index])
-  }
-
-  return any
-
-  function any() {
-    var index = -1
-
-    while (++index < checks.length) {
-      if (checks[index].apply(this, arguments)) {
-        return true
-      }
-    }
-
-    return false
-  }
-}
-
-// Utility to convert a string into a function which checks a given node’s type
-// for said string.
-function typeFactory(test) {
-  return type
-
-  function type(node) {
-    return Boolean(node && node.type === test)
-  }
-}
-
-// Utility to return true.
-function ok() {
-  return true
-}
-
-
-/***/ }),
-
-/***/ 4639:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-var convert = __nccwpck_require__(4070)
-
-module.exports = is
-
-is.convert = convert
-
-// Assert if `test` passes for `node`.
-// When a `parent` node is known the `index` of node should also be given.
-function is(node, test, index, parent, context) {
-  var check = convert(test)
-
-  if (
-    index != null &&
-    (typeof index !== 'number' || index < 0 || index === Infinity)
-  ) {
-    throw new Error('Expected positive finite index')
-  }
-
-  if (parent != null && (!is(parent) || !parent.children)) {
-    throw new Error('Expected parent node')
-  }
-
-  if ((parent == null) !== (index == null)) {
-    throw new Error('Expected both parent and index')
-  }
-
-  return node && node.type && typeof node.type === 'string'
-    ? Boolean(check.call(context, node, index, parent))
-    : false
-}
-
-
-/***/ }),
-
 /***/ 1957:
 /***/ ((module) => {
 
@@ -24013,7 +23977,7 @@ function color(d) {
 
 module.exports = visitParents
 
-var convert = __nccwpck_require__(4070)
+var convert = __nccwpck_require__(4048)
 var color = __nccwpck_require__(9906)
 
 var CONTINUE = true
@@ -24106,38 +24070,86 @@ function toResult(value) {
 
 /***/ }),
 
-/***/ 199:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ 4048:
+/***/ ((module) => {
 
 "use strict";
 
 
-module.exports = visit
+module.exports = convert
 
-var visitParents = __nccwpck_require__(3246)
-
-var CONTINUE = visitParents.CONTINUE
-var SKIP = visitParents.SKIP
-var EXIT = visitParents.EXIT
-
-visit.CONTINUE = CONTINUE
-visit.SKIP = SKIP
-visit.EXIT = EXIT
-
-function visit(tree, test, visitor, reverse) {
-  if (typeof test === 'function' && typeof visitor !== 'function') {
-    reverse = visitor
-    visitor = test
-    test = null
+function convert(test) {
+  if (test == null) {
+    return ok
   }
 
-  visitParents(tree, test, overload, reverse)
-
-  function overload(node, parents) {
-    var parent = parents[parents.length - 1]
-    var index = parent ? parent.children.indexOf(node) : null
-    return visitor(node, index, parent)
+  if (typeof test === 'string') {
+    return typeFactory(test)
   }
+
+  if (typeof test === 'object') {
+    return 'length' in test ? anyFactory(test) : allFactory(test)
+  }
+
+  if (typeof test === 'function') {
+    return test
+  }
+
+  throw new Error('Expected function, string, or object as test')
+}
+
+// Utility assert each property in `test` is represented in `node`, and each
+// values are strictly equal.
+function allFactory(test) {
+  return all
+
+  function all(node) {
+    var key
+
+    for (key in test) {
+      if (node[key] !== test[key]) return false
+    }
+
+    return true
+  }
+}
+
+function anyFactory(tests) {
+  var checks = []
+  var index = -1
+
+  while (++index < tests.length) {
+    checks[index] = convert(tests[index])
+  }
+
+  return any
+
+  function any() {
+    var index = -1
+
+    while (++index < checks.length) {
+      if (checks[index].apply(this, arguments)) {
+        return true
+      }
+    }
+
+    return false
+  }
+}
+
+// Utility to convert a string into a function which checks a given node’s type
+// for said string.
+function typeFactory(test) {
+  return type
+
+  function type(node) {
+    return Boolean(node && node.type === test)
+  }
+}
+
+// Utility to return true.
+function ok() {
+  return true
 }
 
 
@@ -28723,17 +28735,12 @@ function toSlug(value) {
 
 
 async function addLabels(ctx, event, expression) {
-  var {endpoint, headers} = ctx
-  var {owner, repo, post} = event
-  var {id, number} = post
-  var repoLabels
-  var postLabels
-  var result
-  var data
-  var matching
+  const {endpoint, headers} = ctx
+  const {owner, repo, post} = event
+  const {id, number} = post
 
   // To do: paginate.
-  result = await lib(endpoint, {
+  const result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: `
@@ -28752,25 +28759,25 @@ async function addLabels(ctx, event, expression) {
     headers
   }).then((d) => d.json())
 
-  data = (result && result.data && result.data.repository) || {}
+  const data = (result && result.data && result.data.repository) || {}
 
-  repoLabels = (data.labels && data.labels.nodes) || []
-  postLabels =
+  const repoLabels = (data.labels && data.labels.nodes) || []
+  const postLabels =
     (data.issueOrPullRequest &&
       data.issueOrPullRequest.labels &&
       data.issueOrPullRequest.labels.nodes) ||
     []
 
-  if (!repoLabels.length) {
+  if (repoLabels.length === 0) {
     console.info('Could not find any labels in %s/%s', owner.name, repo.name)
     return
   }
 
-  matching = repoLabels.filter(
+  const matching = repoLabels.filter(
     (x) => labelMatches(x, expression) && !postLabels.some((y) => x.id === y.id)
   )
 
-  if (matching.length) {
+  if (matching.length > 0) {
     await lib(endpoint, {
       method: 'POST',
       body: JSON.stringify({
@@ -28814,13 +28821,11 @@ async function addLabels(ctx, event, expression) {
 
 
 async function closePost(ctx, event) {
-  var {endpoint, headers} = ctx
-  var {owner, repo, post} = event
-  var {type, id, number} = post
-  var result
-  var data
+  const {endpoint, headers} = ctx
+  const {owner, repo, post} = event
+  const {type, id, number} = post
 
-  result = await lib(endpoint, {
+  const result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: `
@@ -28839,7 +28844,7 @@ async function closePost(ctx, event) {
   }).then((d) => d.json())
   // To do: error handle.
 
-  data =
+  const data =
     (result &&
       result.data &&
       result.data.repository &&
@@ -28872,10 +28877,9 @@ async function closePost(ctx, event) {
 
 
 async function comments_comments(ctx, event) {
-  var {data, endpoint, headers} = ctx
-  var {post, owner, repo} = event
-  var {number} = post
-  var result
+  const {data, endpoint, headers} = ctx
+  const {post, owner, repo} = event
+  const {number} = post
 
   // Already set up.
   if (data.comments) {
@@ -28883,7 +28887,7 @@ async function comments_comments(ctx, event) {
   }
 
   // To do: Paginate.
-  result = await lib(endpoint, {
+  const result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: `
@@ -28934,21 +28938,20 @@ var remark_stringify = __nccwpck_require__(7114);
 
 
 
-var processor = unified().use(remark_parse).use(remark_stringify).use(remark_gfm)
+const processor = unified().use(remark_parse).use(remark_stringify).use(remark_gfm)
 
-var own = {}.hasOwnProperty
+const own = {}.hasOwnProperty
 
 async function render(ctx, event, parameters) {
-  var renderers = ctx.renderers
-  var keys = parameters.split(':')
-  var key = keys.shift()
-  var result
+  const renderers = ctx.renderers
+  const keys = parameters.split(':')
+  const key = keys.shift()
 
   if (!own.call(renderers, key)) {
     throw new Error('Unregistered render function `' + key + '`')
   }
 
-  result = renderers[key](ctx, event, ...keys)
+  const result = renderers[key](ctx, event, ...keys)
 
   // Support mdast / string.
   return typeof result === 'object' ? processor.stringify(result) : result
@@ -28961,22 +28964,19 @@ async function render(ctx, event, parameters) {
 
 
 async function comment(ctx, event, value) {
-  var {data, endpoint, headers} = ctx
-  var {post} = event
-  var {id} = post
-  var [templateId, rest] = value.split(',').map((d) => d.trim())
-  var templateName = rest || templateId
-  var pragma = commentPragma(templateId)
-  var comments
-  var index
-  var comment
-  var body
-  var result
+  const {data, endpoint, headers} = ctx
+  const {post} = event
+  const {id} = post
+  const [templateId, rest] = value.split(',').map((d) => d.trim())
+  const templateName = rest || templateId
+  const pragma = commentPragma(templateId)
+  let comment
+  let body
 
   await comments_comments(ctx, event)
 
-  comments = data.comments
-  index = comments.length
+  const comments = data.comments
+  let index = comments.length
 
   while (index--) {
     if (
@@ -28992,7 +28992,7 @@ async function comment(ctx, event, value) {
   body += '\n' + pragma
 
   // Either update the existing comment, or add a new one.
-  result = await lib(endpoint, {
+  const result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: comment
@@ -29041,15 +29041,14 @@ async function comment(ctx, event, value) {
 
 
 async function forgetComments(ctx, event, id) {
-  var {endpoint, headers} = ctx
-  var pragma = commentPragma(id)
-  var comments
-  var query
-  var index
+  const {endpoint, headers} = ctx
+  const pragma = commentPragma(id)
+  let query
+  let index
 
   await comments_comments(ctx, event)
 
-  comments = ctx.data.comments.filter(
+  const comments = ctx.data.comments.filter(
     (d) => d.viewerDidAuthor && d.body.includes(pragma)
   )
 
@@ -29059,7 +29058,7 @@ async function forgetComments(ctx, event, id) {
     comments[index].body = comments[index].body.replace(pragma, '')
   }
 
-  if (comments.length) {
+  if (comments.length > 0) {
     query = [
       'mutation {',
       ...comments.map(
@@ -29090,19 +29089,18 @@ async function forgetComments(ctx, event, id) {
 
 
 async function minimizeComments(ctx, event, id) {
-  var {endpoint, headers} = ctx
-  var pragma = commentPragma(id)
-  var comments
-  var query
-  var index
+  const {endpoint, headers} = ctx
+  const pragma = commentPragma(id)
+  let query
+  let index
 
   await comments_comments(ctx, event)
 
-  comments = ctx.data.comments.filter(
+  const comments = ctx.data.comments.filter(
     (d) => d.viewerDidAuthor && !d.isMinimized && d.body.includes(pragma)
   )
 
-  if (comments.length) {
+  if (comments.length > 0) {
     // To do: make `classifier` configurable.
     query = [
       'mutation {',
@@ -29140,14 +29138,12 @@ async function minimizeComments(ctx, event, id) {
 
 
 async function removeLabels(ctx, event, expression) {
-  var {endpoint, headers} = ctx
-  var {owner, repo, post} = event
-  var {id, number} = post
-  var matching
-  var labels
+  const {endpoint, headers} = ctx
+  const {owner, repo, post} = event
+  const {id, number} = post
 
   // To do: paginate.
-  var result = await lib(endpoint, {
+  const result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: `
@@ -29165,7 +29161,7 @@ async function removeLabels(ctx, event, expression) {
     headers
   }).then((d) => d.json())
 
-  labels =
+  const labels =
     (result &&
       result.data &&
       result.data.repository &&
@@ -29174,14 +29170,14 @@ async function removeLabels(ctx, event, expression) {
       result.data.repository.issueOrPullRequest.labels.nodes) ||
     []
 
-  if (!labels.length) {
+  if (labels.length === 0) {
     console.info('Could not find any labels on %s', number)
     return
   }
 
-  matching = labels.filter((d) => labelMatches(d, expression))
+  const matching = labels.filter((d) => labelMatches(d, expression))
 
-  if (matching.length) {
+  if (matching.length > 0) {
     await lib(endpoint, {
       method: 'POST',
       body: JSON.stringify({
@@ -29225,13 +29221,11 @@ async function removeLabels(ctx, event, expression) {
 
 
 async function reopenPost(ctx, event) {
-  var {endpoint, headers} = ctx
-  var {owner, repo, post} = event
-  var {type, id, number} = post
-  var result
-  var data
+  const {endpoint, headers} = ctx
+  const {owner, repo, post} = event
+  const {type, id, number} = post
 
-  result = await lib(endpoint, {
+  const result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: `
@@ -29250,7 +29244,7 @@ async function reopenPost(ctx, event) {
   }).then((d) => d.json())
   // To do: error handle.
 
-  data =
+  const data =
     (result &&
       result.data &&
       result.data.repository &&
@@ -29285,7 +29279,7 @@ var ms = __nccwpck_require__(900);
 
 
 async function sleep(ctx, event, value) {
-  var delay = ms(value || '1m')
+  const delay = ms(value || '1m')
   console.info('Going to sleep for %s', ms(delay))
   await sleep_(delay)
   console.info('Waking up')
@@ -29306,19 +29300,18 @@ function sleep_(delay) {
 
 
 async function unminimizeComments(ctx, event, id) {
-  var {endpoint, headers} = ctx
-  var pragma = commentPragma(id)
-  var comments
-  var query
-  var index
+  const {endpoint, headers} = ctx
+  const pragma = commentPragma(id)
+  let query
+  let index
 
   await comments_comments(ctx, event)
 
-  comments = ctx.data.comments.filter(
+  const comments = ctx.data.comments.filter(
     (d) => d.viewerDidAuthor && d.isMinimized && d.body.includes(pragma)
   )
 
-  if (comments.length) {
+  if (comments.length > 0) {
     query = [
       'mutation {',
       ...comments.map(
@@ -29379,13 +29372,12 @@ const action = {
 
 
 async function hasLabels(ctx, event, expression) {
-  var {endpoint, headers} = ctx
-  var {owner, repo, post} = event
-  var {number} = post
-  var labels
+  const {endpoint, headers} = ctx
+  const {owner, repo, post} = event
+  const {number} = post
 
   // To do: paginate.
-  var result = await lib(endpoint, {
+  const result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: `
@@ -29403,7 +29395,7 @@ async function hasLabels(ctx, event, expression) {
     headers
   }).then((d) => d.json())
 
-  labels =
+  const labels =
     (result &&
       result.data &&
       result.data.repository &&
@@ -29419,11 +29411,11 @@ async function hasLabels(ctx, event, expression) {
 
 
 async function markedAsDuplicate(ctx, event) {
-  var {endpoint, headers} = ctx
-  var {owner, repo, post} = event
-  var {number} = post
+  const {endpoint, headers} = ctx
+  const {owner, repo, post} = event
+  const {number} = post
 
-  var result = await lib(endpoint, {
+  const result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: `
@@ -29445,7 +29437,7 @@ async function markedAsDuplicate(ctx, event) {
     headers
   }).then((d) => d.json())
 
-  var events =
+  const events =
     (result &&
       result.data &&
       result.data.repository &&
@@ -29462,7 +29454,7 @@ async function markedAsDuplicate(ctx, event) {
 
 ;// CONCATENATED MODULE: ./lib/boop/condition/is.js
 function is(ctx, event, type) {
-  var {post} = event
+  const {post} = event
   return post && post.type === type
 }
 
@@ -29470,9 +29462,9 @@ function is(ctx, event, type) {
 // Note: we’re only supporting posts right now.
 
 
-var on_own = {}.hasOwnProperty
+const on_own = {}.hasOwnProperty
 
-var on_map = {
+const on_map = {
   'post-closed': postClosed,
   'post-edited': postEdited,
   'post-labeled': postLabeled,
@@ -29482,8 +29474,8 @@ var on_map = {
 }
 
 function on(ctx, event, parameters) {
-  var keys = parameters.split(':')
-  var key = keys.shift()
+  const keys = parameters.split(':')
+  const key = keys.shift()
 
   if (!on_own.call(on_map, key)) {
     throw new Error('Unknown `' + key + '` as `on` condition')
@@ -29522,9 +29514,9 @@ function postUnlabeled(ctx, event, expression) {
 
 
 
-var recent_comment_own = {}.hasOwnProperty
+const recent_comment_own = {}.hasOwnProperty
 
-var recent_comment_map = {
+const recent_comment_map = {
   TEAM: ['COLLABORATOR', 'MEMBER', 'OWNER'],
   NONTEAM: [
     'CONTRIBUTOR',
@@ -29538,18 +29530,16 @@ var recent_comment_map = {
 recent_comment_map.ANY = recent_comment_map.TEAM.concat(recent_comment_map.NONTEAM)
 
 async function recentComment(ctx, event, value) {
-  var {endpoint, headers} = ctx
-  var {owner, repo, post} = event
-  var {number} = post
-  var parameters = (value || '').split(',')
-  var role = (parameters[0] || 'any').toUpperCase()
-  var time = ms(parameters[1] || '1m')
-  var threshold = Date.now().valueOf() - time
-  var roles = recent_comment_own.call(recent_comment_map, role) ? recent_comment_map[role] : [role]
-  var result
-  var comments
+  const {endpoint, headers} = ctx
+  const {owner, repo, post} = event
+  const {number} = post
+  const parameters = (value || '').split(',')
+  const role = (parameters[0] || 'any').toUpperCase()
+  const time = ms(parameters[1] || '1m')
+  const threshold = Date.now().valueOf() - time
+  const roles = recent_comment_own.call(recent_comment_map, role) ? recent_comment_map[role] : [role]
 
-  result = await lib(endpoint, {
+  const result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: `
@@ -29567,7 +29557,7 @@ async function recentComment(ctx, event, value) {
     headers
   }).then((d) => d.json())
 
-  comments =
+  const comments =
     (result &&
       result.data &&
       result.data.repository &&
@@ -29612,18 +29602,20 @@ const boop = {
 
 
 async function run(ctx, event) {
-  var index = -1
-  var task
+  let index = -1
+  let task
 
   while (++index < ctx.tasks.length) {
     task = ctx.tasks[index]
 
     if (typeof task !== 'object') {
-      throw new Error('Cannot handle main task: `' + JSON.stringify(task) + '`')
+      throw new TypeError(
+        'Cannot handle main task: `' + JSON.stringify(task) + '`'
+      )
     }
 
     if (typeof task.if !== 'string') {
-      throw new Error(
+      throw new TypeError(
         'Cannot handle main task w/o `if`: `' + JSON.stringify(task) + '`'
       )
     }
@@ -29633,14 +29625,14 @@ async function run(ctx, event) {
 }
 
 async function performAction(ctx, event, task) {
-  var index = -1
+  let index = -1
 
   if (typeof task === 'string') {
     return call(ctx, event, task, 'action')
   }
 
   if (typeof task !== 'object') {
-    throw new Error('Cannot handle task: `' + JSON.stringify(task) + '`')
+    throw new TypeError('Cannot handle task: `' + JSON.stringify(task) + '`')
   }
 
   if (Array.isArray(task)) {
@@ -29663,12 +29655,12 @@ async function performAction(ctx, event, task) {
 }
 
 function call(ctx, event, thing, type) {
-  var position = thing.indexOf(':')
-  var name
-  var plugin
-  var rest
-  var todo
-  var parameter
+  let position = thing.indexOf(':')
+  let name
+  let plugin
+  let rest
+  let todo
+  let parameter
 
   if (position !== -1) {
     name = thing.slice(0, position)
@@ -29683,11 +29675,13 @@ function call(ctx, event, thing, type) {
   }
 
   if (typeof plugin !== 'object') {
-    throw new Error('Plugin `' + name + '` not registered')
+    throw new TypeError('Plugin `' + name + '` not registered')
   }
 
   if (typeof plugin[type] !== 'object') {
-    throw new Error('Plugin `' + plugin.name + '` doesn’t have ' + type + 's')
+    throw new TypeError(
+      'Plugin `' + plugin.name + '` doesn’t have ' + type + 's'
+    )
   }
 
   position = rest.indexOf(':')
@@ -29700,7 +29694,7 @@ function call(ctx, event, thing, type) {
   }
 
   if (typeof plugin[type][todo] !== 'function') {
-    throw new Error(
+    throw new TypeError(
       'Plugin `' + name + '` doesn’t have a `' + todo + '` ' + type
     )
   }
@@ -29713,16 +29707,16 @@ function call(ctx, event, thing, type) {
 
 
 
-var posts = ['issues', 'pull_request', 'pull_request_target']
+const posts = new Set(['issues', 'pull_request', 'pull_request_target'])
 
-var postActions = [
+const postActions = new Set([
   'opened',
   'reopened',
   'edited',
   'closed',
   'labeled',
   'unlabeled'
-]
+])
 
 function beep(options) {
   try {
@@ -29738,7 +29732,7 @@ function beep_onerror(error) {
 }
 
 function go(options) {
-  var token = lib_core.getInput('repo-token', {required: true})
+  const token = lib_core.getInput('repo-token', {required: true})
 
   if (!token) {
     throw new Error('Missing `token`')
@@ -29763,15 +29757,15 @@ function go(options) {
 
 // Turn a GH context into an event.
 function toEvent(context) {
-  var {eventName, payload} = context
-  var {action, label, repository} = payload
-  var post = payload.issue || payload.pull_request
+  const {eventName, payload} = context
+  const {action, label, repository} = payload
+  const post = payload.issue || payload.pull_request
 
-  if (!posts.includes(eventName)) {
+  if (!posts.has(eventName)) {
     throw new Error('Can’t handle GH action event name `' + eventName + '`')
   }
 
-  if (!postActions.includes(action)) {
+  if (!postActions.has(action)) {
     throw new Error('Can’t handle GH action `' + action + '`')
   }
 
@@ -29807,31 +29801,579 @@ var vfile = __nccwpck_require__(4860);
 var vfile_matter = __nccwpck_require__(3914);
 // EXTERNAL MODULE: ./node_modules/similarity/index.js
 var similarity = __nccwpck_require__(8293);
-// EXTERNAL MODULE: ./node_modules/unist-util-is/index.js
-var unist_util_is = __nccwpck_require__(4639);
-// EXTERNAL MODULE: ./node_modules/unist-util-visit/index.js
-var unist_util_visit = __nccwpck_require__(199);
-// EXTERNAL MODULE: ./node_modules/mdast-util-to-string/index.js
-var mdast_util_to_string = __nccwpck_require__(5789);
+;// CONCATENATED MODULE: ./node_modules/unist-util-is/index.js
+/**
+ * @typedef {import('unist').Node} Node
+ * @typedef {import('unist').Parent} Parent
+ *
+ * @typedef {string} Type
+ * @typedef {Object<string, unknown>} Props
+ *
+ * @typedef {null|undefined|Type|Props|TestFunctionAnything|Array.<Type|Props|TestFunctionAnything>} Test
+ */
+
+/**
+ * Check if a node passes a test
+ *
+ * @callback TestFunctionAnything
+ * @param {Node} node
+ * @param {number} [index]
+ * @param {Parent} [parent]
+ * @returns {boolean|void}
+ */
+
+/**
+ * Check if a node passes a certain node test
+ *
+ * @template {Node} X
+ * @callback TestFunctionPredicate
+ * @param {Node} node
+ * @param {number} [index]
+ * @param {Parent} [parent]
+ * @returns {node is X}
+ */
+
+/**
+ * @callback AssertAnything
+ * @param {unknown} [node]
+ * @param {number} [index]
+ * @param {Parent} [parent]
+ * @returns {boolean}
+ */
+
+/**
+ * Check if a node passes a certain node test
+ *
+ * @template {Node} Y
+ * @callback AssertPredicate
+ * @param {unknown} [node]
+ * @param {number} [index]
+ * @param {Parent} [parent]
+ * @returns {node is Y}
+ */
+
+var unist_util_is_is =
+  /**
+   * Check if a node passes a test.
+   * When a `parent` node is known the `index` of node should also be given.
+   *
+   * @type {(
+   *   (<T extends Node>(node: unknown, test: T['type']|Partial<T>|TestFunctionPredicate<T>|Array.<T['type']|Partial<T>|TestFunctionPredicate<T>>, index?: number, parent?: Parent, context?: unknown) => node is T) &
+   *   ((node?: unknown, test?: Test, index?: number, parent?: Parent, context?: unknown) => boolean)
+   * )}
+   */
+  (
+    /**
+     * Check if a node passes a test.
+     * When a `parent` node is known the `index` of node should also be given.
+     *
+     * @param {unknown} [node] Node to check
+     * @param {Test} [test]
+     * When nullish, checks if `node` is a `Node`.
+     * When `string`, works like passing `function (node) {return node.type === test}`.
+     * When `function` checks if function passed the node is true.
+     * When `object`, checks that all keys in test are in node, and that they have (strictly) equal values.
+     * When `array`, checks any one of the subtests pass.
+     * @param {number} [index] Position of `node` in `parent`
+     * @param {Parent} [parent] Parent of `node`
+     * @param {unknown} [context] Context object to invoke `test` with
+     * @returns {boolean} Whether test passed and `node` is a `Node` (object with `type` set to non-empty `string`).
+     */
+    // eslint-disable-next-line max-params
+    function is(node, test, index, parent, context) {
+      var check = convert(test)
+
+      if (
+        index !== undefined &&
+        index !== null &&
+        (typeof index !== 'number' ||
+          index < 0 ||
+          index === Number.POSITIVE_INFINITY)
+      ) {
+        throw new Error('Expected positive finite index')
+      }
+
+      if (
+        parent !== undefined &&
+        parent !== null &&
+        (!is(parent) || !parent.children)
+      ) {
+        throw new Error('Expected parent node')
+      }
+
+      if (
+        (parent === undefined || parent === null) !==
+        (index === undefined || index === null)
+      ) {
+        throw new Error('Expected both parent and index')
+      }
+
+      // @ts-ignore Looks like a node.
+      return node && node.type && typeof node.type === 'string'
+        ? Boolean(check.call(context, node, index, parent))
+        : false
+    }
+  )
+
+var convert =
+  /**
+   * @type {(
+   *   (<T extends Node>(test: T['type']|Partial<T>|TestFunctionPredicate<T>) => AssertPredicate<T>) &
+   *   ((test?: Test) => AssertAnything)
+   * )}
+   */
+  (
+    /**
+     * Generate an assertion from a check.
+     * @param {Test} [test]
+     * When nullish, checks if `node` is a `Node`.
+     * When `string`, works like passing `function (node) {return node.type === test}`.
+     * When `function` checks if function passed the node is true.
+     * When `object`, checks that all keys in test are in node, and that they have (strictly) equal values.
+     * When `array`, checks any one of the subtests pass.
+     * @returns {AssertAnything}
+     */
+    function (test) {
+      if (test === undefined || test === null) {
+        return ok
+      }
+
+      if (typeof test === 'string') {
+        return typeFactory(test)
+      }
+
+      if (typeof test === 'object') {
+        // @ts-ignore looks like a list of tests / partial test object.
+        return 'length' in test ? anyFactory(test) : propsFactory(test)
+      }
+
+      if (typeof test === 'function') {
+        return castFactory(test)
+      }
+
+      throw new Error('Expected function, string, or object as test')
+    }
+  )
+/**
+ * @param {Array.<Type|Props|TestFunctionAnything>} tests
+ * @returns {AssertAnything}
+ */
+function anyFactory(tests) {
+  /** @type {Array.<AssertAnything>} */
+  var checks = []
+  var index = -1
+
+  while (++index < tests.length) {
+    checks[index] = convert(tests[index])
+  }
+
+  return castFactory(any)
+
+  /**
+   * @this {unknown}
+   * @param {unknown[]} parameters
+   * @returns {boolean}
+   */
+  function any(...parameters) {
+    var index = -1
+
+    while (++index < checks.length) {
+      if (checks[index].call(this, ...parameters)) return true
+    }
+  }
+}
+
+/**
+ * Utility to assert each property in `test` is represented in `node`, and each
+ * values are strictly equal.
+ *
+ * @param {Props} check
+ * @returns {AssertAnything}
+ */
+function propsFactory(check) {
+  return castFactory(all)
+
+  /**
+   * @param {Node} node
+   * @returns {boolean}
+   */
+  function all(node) {
+    /** @type {string} */
+    var key
+
+    for (key in check) {
+      if (node[key] !== check[key]) return
+    }
+
+    return true
+  }
+}
+
+/**
+ * Utility to convert a string into a function which checks a given node’s type
+ * for said string.
+ *
+ * @param {Type} check
+ * @returns {AssertAnything}
+ */
+function typeFactory(check) {
+  return castFactory(type)
+
+  /**
+   * @param {Node} node
+   */
+  function type(node) {
+    return node && node.type === check
+  }
+}
+
+/**
+ * Utility to convert a string into a function which checks a given node’s type
+ * for said string.
+ * @param {TestFunctionAnything} check
+ * @returns {AssertAnything}
+ */
+function castFactory(check) {
+  return assertion
+
+  /**
+   * @this {unknown}
+   * @param {Array.<unknown>} parameters
+   * @returns {boolean}
+   */
+  function assertion(...parameters) {
+    return Boolean(check.call(this, ...parameters))
+  }
+}
+
+// Utility to return true.
+function ok() {
+  return true
+}
+
+;// CONCATENATED MODULE: ./node_modules/unist-util-visit/node_modules/unist-util-visit-parents/color.js
+/**
+ * @param {string} d
+ * @returns {string}
+ */
+function color(d) {
+  return '\u001B[33m' + d + '\u001B[39m'
+}
+
+;// CONCATENATED MODULE: ./node_modules/unist-util-visit/node_modules/unist-util-visit-parents/index.js
+/**
+ * @typedef {import('unist').Node} Node
+ * @typedef {import('unist').Parent} Parent
+ * @typedef {import('unist-util-is').Test} Test
+ */
+
+/**
+ * @typedef {CONTINUE|SKIP|EXIT} Action Union of the action types
+ * @typedef {number} Index Move to the sibling at index next (after node itself is completely traversed). Useful if mutating the tree, such as removing the node the visitor is currently on, or any of its previous siblings (or next siblings, in case of reverse) Results less than 0 or greater than or equal to children.length stop traversing the parent
+ * @typedef {[(Action|null|undefined|void)?, (Index|null|undefined)?]} ActionTuple List with one or two values, the first an action, the second an index.
+ * @typedef {null|undefined|Action|Index|ActionTuple|void} VisitorResult Any value that can be returned from a visitor
+ */
+
+/**
+ * Invoked when a node (matching test, if given) is found.
+ * Visitors are free to transform node.
+ * They can also transform the parent of node (the last of ancestors).
+ * Replacing node itself, if `SKIP` is not returned, still causes its descendants to be visited.
+ * If adding or removing previous siblings (or next siblings, in case of reverse) of node,
+ * visitor should return a new index (number) to specify the sibling to traverse after node is traversed.
+ * Adding or removing next siblings of node (or previous siblings, in case of reverse)
+ * is handled as expected without needing to return a new index.
+ * Removing the children property of an ancestor still results in them being traversed.
+ *
+ * @template {Node} V
+ * @callback Visitor
+ * @param {V} node Found node
+ * @param {Array.<Parent>} ancestors Ancestors of node
+ * @returns {VisitorResult}
+ */
+
+
+
+
+/**
+ * Continue traversing as normal
+ */
+const CONTINUE = true
+/**
+ * Do not traverse this node’s children
+ */
+const SKIP = 'skip'
+/**
+ * Stop traversing immediately
+ */
+const EXIT = false
+
+const visitParents =
+  /**
+   * @type {(
+   *   (<T extends Node>(tree: Node, test: T['type']|Partial<T>|import('unist-util-is').TestFunctionPredicate<T>|Array.<T['type']|Partial<T>|import('unist-util-is').TestFunctionPredicate<T>>, visitor: Visitor<T>, reverse?: boolean) => void) &
+   *   ((tree: Node, test: Test, visitor: Visitor<Node>, reverse?: boolean) => void) &
+   *   ((tree: Node, visitor: Visitor<Node>, reverse?: boolean) => void)
+   * )}
+   */
+  (
+    /**
+     * Visit children of tree which pass a test
+     *
+     * @param {Node} tree Abstract syntax tree to walk
+     * @param {Test} test test Test node
+     * @param {Visitor<Node>} visitor Function to run for each node
+     * @param {boolean} [reverse] Fisit the tree in reverse, defaults to false
+     */
+    function (tree, test, visitor, reverse) {
+      if (typeof test === 'function' && typeof visitor !== 'function') {
+        reverse = visitor
+        // @ts-ignore no visitor given, so `visitor` is test.
+        visitor = test
+        test = null
+      }
+
+      var is = convert(test)
+      var step = reverse ? -1 : 1
+
+      factory(tree, null, [])()
+
+      /**
+       * @param {Node} node
+       * @param {number?} index
+       * @param {Array.<Parent>} parents
+       */
+      function factory(node, index, parents) {
+        /** @type {Object.<string, unknown>} */
+        var value = typeof node === 'object' && node !== null ? node : {}
+        /** @type {string} */
+        var name
+
+        if (typeof value.type === 'string') {
+          name =
+            typeof value.tagName === 'string'
+              ? value.tagName
+              : typeof value.name === 'string'
+              ? value.name
+              : undefined
+
+          Object.defineProperty(visit, 'name', {
+            value:
+              'node (' +
+              color(value.type + (name ? '<' + name + '>' : '')) +
+              ')'
+          })
+        }
+
+        return visit
+
+        function visit() {
+          /** @type {ActionTuple} */
+          var result = []
+          /** @type {ActionTuple} */
+          var subresult
+          /** @type {number} */
+          var offset
+          /** @type {Array.<Parent>} */
+          var grandparents
+
+          if (!test || is(node, index, parents[parents.length - 1] || null)) {
+            result = toResult(visitor(node, parents))
+
+            if (result[0] === EXIT) {
+              return result
+            }
+          }
+
+          if (node.children && result[0] !== SKIP) {
+            // @ts-ignore looks like a parent.
+            offset = (reverse ? node.children.length : -1) + step
+            // @ts-ignore looks like a parent.
+            grandparents = parents.concat(node)
+
+            // @ts-ignore looks like a parent.
+            while (offset > -1 && offset < node.children.length) {
+              subresult = factory(node.children[offset], offset, grandparents)()
+
+              if (subresult[0] === EXIT) {
+                return subresult
+              }
+
+              offset =
+                typeof subresult[1] === 'number' ? subresult[1] : offset + step
+            }
+          }
+
+          return result
+        }
+      }
+    }
+  )
+
+/**
+ * @param {VisitorResult} value
+ * @returns {ActionTuple}
+ */
+function toResult(value) {
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  if (typeof value === 'number') {
+    return [CONTINUE, value]
+  }
+
+  return [value]
+}
+
+;// CONCATENATED MODULE: ./node_modules/unist-util-visit/index.js
+/**
+ * @typedef {import('unist').Node} Node
+ * @typedef {import('unist').Parent} Parent
+ * @typedef {import('unist-util-is').Test} Test
+ * @typedef {import('unist-util-visit-parents').VisitorResult} VisitorResult
+ */
+
+/**
+ * Invoked when a node (matching test, if given) is found.
+ * Visitors are free to transform node.
+ * They can also transform the parent of node (the last of ancestors).
+ * Replacing node itself, if `SKIP` is not returned, still causes its descendants to be visited.
+ * If adding or removing previous siblings (or next siblings, in case of reverse) of node,
+ * visitor should return a new index (number) to specify the sibling to traverse after node is traversed.
+ * Adding or removing next siblings of node (or previous siblings, in case of reverse)
+ * is handled as expected without needing to return a new index.
+ * Removing the children property of an ancestor still results in them being traversed.
+ *
+ * @template {Node} V
+ * @callback Visitor
+ * @param {V} node Found node
+ * @param {number|null} index Position of `node` in `parent`
+ * @param {Parent|null} parent Parent of `node`
+ * @returns {VisitorResult}
+ */
+
+
+
+
+
+const visit =
+  /**
+   * @type {(
+   *   (<T extends Node>(tree: Node, test: T['type']|Partial<T>|import('unist-util-is').TestFunctionPredicate<T>|Array.<T['type']|Partial<T>|import('unist-util-is').TestFunctionPredicate<T>>, visitor: Visitor<T>, reverse?: boolean) => void) &
+   *   ((tree: Node, test: Test, visitor: Visitor<Node>, reverse?: boolean) => void) &
+   *   ((tree: Node, visitor: Visitor<Node>, reverse?: boolean) => void)
+   * )}
+   */
+  (
+    /**
+     * Visit children of tree which pass a test
+     *
+     * @param {Node} tree Abstract syntax tree to walk
+     * @param {Test} test test Test node
+     * @param {Visitor<Node>} visitor Function to run for each node
+     * @param {boolean} [reverse] Fisit the tree in reverse, defaults to false
+     */
+    function (tree, test, visitor, reverse) {
+      if (typeof test === 'function' && typeof visitor !== 'function') {
+        reverse = visitor
+        visitor = test
+        test = null
+      }
+
+      visitParents(tree, test, overload, reverse)
+
+      /**
+       * @param {Node} node
+       * @param {Array.<Parent>} parents
+       */
+      function overload(node, parents) {
+        var parent = parents[parents.length - 1]
+        return visitor(
+          node,
+          parent ? parent.children.indexOf(node) : null,
+          parent
+        )
+      }
+    }
+  )
+
+;// CONCATENATED MODULE: ./node_modules/mdast-util-to-string/index.js
+/**
+ * @typedef Options
+ * @property {boolean} [includeImageAlt=true]
+ */
+
+/**
+ * Get the text content of a node.
+ * Prefer the node’s plain-text fields, otherwise serialize its children,
+ * and if the given value is an array, serialize the nodes in it.
+ *
+ * @param {unknown} node
+ * @param {Options} [options]
+ * @returns {string}
+ */
+function mdast_util_to_string_toString(node, options) {
+  var {includeImageAlt = true} = options || {}
+  return one(node, includeImageAlt)
+}
+
+/**
+ * @param {unknown} node
+ * @param {boolean} includeImageAlt
+ * @returns {string}
+ */
+function one(node, includeImageAlt) {
+  return (
+    (node &&
+      typeof node === 'object' &&
+      // @ts-ignore looks like a literal.
+      (node.value ||
+        // @ts-ignore looks like an image.
+        (includeImageAlt ? node.alt : '') ||
+        // @ts-ignore looks like a parent.
+        ('children' in node && mdast_util_to_string_all(node.children, includeImageAlt)) ||
+        (Array.isArray(node) && mdast_util_to_string_all(node, includeImageAlt)))) ||
+    ''
+  )
+}
+
+/**
+ * @param {Array.<unknown>} values
+ * @param {boolean} includeImageAlt
+ * @returns {string}
+ */
+function mdast_util_to_string_all(values, includeImageAlt) {
+  /** @type {Array.<string>} */
+  var result = []
+  var index = -1
+
+  while (++index < values.length) {
+    result[index] = one(values[index], includeImageAlt)
+  }
+
+  return result.join('')
+}
+
 ;// CONCATENATED MODULE: ./lib/custom/util/get-sections.js
 
 
 
 
 function getSections(tree, doc) {
-  var sections = []
-  unist_util_visit(tree, onvisit)
+  const sections = []
+  visit(tree, onvisit)
   return sections
 
   function onvisit(node) {
-    if (unist_util_is(node, 'heading')) {
-      sections.push({section: mdast_util_to_string(node), ok: true})
+    if (unist_util_is_is(node, 'heading')) {
+      sections.push({section: mdast_util_to_string_toString(node), ok: true})
     }
 
     if (
-      sections.length &&
-      ((unist_util_is(node, 'listItem') && node.checked === false) ||
-        (unist_util_is(node, 'text') &&
+      sections.length > 0 &&
+      ((unist_util_is_is(node, 'listItem') && node.checked === false) ||
+        (unist_util_is_is(node, 'text') &&
           doc
             .slice(node.position.start.offset, node.position.end.offset)
             .includes('TODO')))
@@ -29846,14 +30388,14 @@ function getSections(tree, doc) {
 
 
 function templateNameFromMdast(tree) {
-  var head = tree.children[0]
-  var match = unist_util_is(head, 'html') && /^<!--\s*([a-z\d-]+):/i.exec(head.value)
+  const head = tree.children[0]
+  let match = unist_util_is_is(head, 'html') && /^<!--\s*([a-z\d-]+):/i.exec(head.value)
 
-  unist_util_visit(tree, 'html', (node) => {
-    var newMatch = /^<!--do not edit: ([a-z\d-]+)-->$/i.exec(node.value)
+  visit(tree, 'html', (node) => {
+    const newMatch = /^<!--do not edit: ([a-z\d-]+)-->$/i.exec(node.value)
     if (newMatch) {
       match = newMatch
-      return unist_util_visit.EXIT
+      return EXIT
     }
   })
 
@@ -29873,31 +30415,26 @@ function templateNameFromMdast(tree) {
 
 
 
-var templates_own = {}.hasOwnProperty
+const templates_own = {}.hasOwnProperty
 
-var templates_processor = unified().use(remark_parse).use(remark_stringify).use(remark_gfm)
+const templates_processor = unified().use(remark_parse).use(remark_stringify).use(remark_gfm)
 
 async function templates(ctx, event) {
-  var {data, endpoint, headers} = ctx
-  var {post, owner, repo} = event
-  var {number} = post
-  var result
-  var body
-  var tree
-  var name
-  var actual
-  var expected
-  var template
-  var expectedIndex
-  var actualIndex
-  var status
+  const {data, endpoint, headers} = ctx
+  const {post, owner, repo} = event
+  const {number} = post
+  let expected
+  let template
+  let expectedIndex
+  let actualIndex
+  let status
 
   if (data.checkTemplateStatus) {
     return
   }
 
   // To do: paginate.
-  result = await lib(endpoint, {
+  const result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: `
@@ -29915,7 +30452,7 @@ async function templates(ctx, event) {
     headers
   }).then((d) => d.json())
 
-  body =
+  const body =
     (result &&
       result.data &&
       result.data.repository &&
@@ -29923,9 +30460,9 @@ async function templates(ctx, event) {
       result.data.repository.issueOrPullRequest.body) ||
     ''
 
-  tree = templates_processor.parse(body)
-  name = templateNameFromMdast(tree)
-  actual = getSections(tree, body)
+  const tree = templates_processor.parse(body)
+  const name = templateNameFromMdast(tree)
+  const actual = getSections(tree, body)
 
   await setupTemplates(ctx, event)
 
@@ -29953,7 +30490,7 @@ async function templates(ctx, event) {
       }
     }
 
-    status = expected.filter((d) => !d.ok).length ? 'incorrect' : 'correct'
+    status = expected.filter((d) => !d.ok).length > 0 ? 'incorrect' : 'correct'
   } else {
     status = 'missing'
   }
@@ -29964,15 +30501,15 @@ async function templates(ctx, event) {
 }
 
 async function setupTemplates(ctx, event) {
-  var {endpoint, headers} = ctx
-  var {owner, repo} = event
+  const {endpoint, headers} = ctx
+  const {owner, repo} = event
 
   // Already set up.
   if (ctx.data.templatesByName) {
     return
   }
 
-  var result = await lib(endpoint, {
+  let result = await lib(endpoint, {
     method: 'POST',
     body: JSON.stringify({
       query: `
@@ -29986,14 +30523,14 @@ async function setupTemplates(ctx, event) {
     headers
   }).then((d) => d.json())
 
-  var repoBranch =
+  const repoBranch =
     (result &&
       result.data &&
       result.data.repo &&
       result.data.repo.defaultBranchRef &&
       result.data.repo.defaultBranchRef.name) ||
     'main'
-  var orgBranch =
+  const orgBranch =
     (result &&
       result.data &&
       result.data.org &&
@@ -30023,8 +30560,8 @@ async function setupTemplates(ctx, event) {
     headers
   }).then((d) => d.json())
 
-  var folders = []
-  var files = []
+  const folders = []
+  const files = []
 
   if (result && result.data && result.data.repo) {
     allEntries({owner, repo, branch: repoBranch}, result.data.repo)
@@ -30037,12 +30574,12 @@ async function setupTemplates(ctx, event) {
     )
   }
 
-  var data
-  var key
-  var folder
-  var index
+  let data
+  let key
+  let folder
+  let index
 
-  if (folders.length) {
+  if (folders.length > 0) {
     result = await lib(endpoint, {
       method: 'POST',
       body: JSON.stringify({
@@ -30070,6 +30607,7 @@ async function setupTemplates(ctx, event) {
 
     data = result.data || {}
     for (key in data) {
+      if (!templates_own.call(data, key)) continue
       folder = folders[key.slice(1)]
       result = (data[key] && data[key].object && data[key].object.entries) || []
       index = -1
@@ -30084,7 +30622,7 @@ async function setupTemplates(ctx, event) {
     }
   }
 
-  if (!files.length) {
+  if (files.length === 0) {
     console.info('Could not find templates')
     return
   }
@@ -30112,13 +30650,14 @@ async function setupTemplates(ctx, event) {
     headers
   }).then((d) => d.json())
 
-  var templates = []
-  var file
-  var tree
-  var info
+  const templates = []
+  let file
+  let tree
+  let info
 
   data = result.data || {}
   for (key in data) {
+    if (!templates_own.call(data, key)) continue
     info = files[key.slice(1)]
     if (!data[key] || !data[key].object || !data[key].object.text) {
       continue
@@ -30145,14 +30684,14 @@ async function setupTemplates(ctx, event) {
     tree = templates_processor.parse(file)
 
     templates.push({
-      file: file,
-      tree: tree,
+      file,
+      tree,
       type: info.type,
       name: templateNameFromMdast(tree)
     })
   }
 
-  var templatesByName = {}
+  const templatesByName = {}
 
   ctx.data.templatesByName = templatesByName
   index = -1
@@ -30171,7 +30710,7 @@ async function setupTemplates(ctx, event) {
     }
   }
 
-  if (!templates.length) {
+  if (templates.length === 0) {
     console.info('Could not get templates')
   }
 
@@ -30190,9 +30729,9 @@ async function setupTemplates(ctx, event) {
   }
 
   function eachEntries(base, entries) {
-    var index = -1
-    var entry
-    var type
+    let index = -1
+    let entry
+    let type
 
     while (++index < entries.length) {
       entry = entries[index]
@@ -30243,15 +30782,61 @@ const custom = {
   condition: condition_condition
 }
 
-// EXTERNAL MODULE: ./node_modules/unist-builder/index.js
-var unist_builder = __nccwpck_require__(2637);
+;// CONCATENATED MODULE: ./node_modules/unist-builder/index.js
+/**
+ * @typedef {import('unist').Node} Node
+ * @typedef {import('unist').Parent} Parent
+ * @typedef {import('unist').Literal} Literal
+ * @typedef {Object.<string, unknown>} Props
+ * @typedef {Array.<Node>|string} ChildrenOrValue
+ *
+ * @typedef {(<T extends string, P extends Record<string, unknown>, C extends Node[]>(type: T, props: P, children: C) => {type: T, children: C} & P)} BuildParentWithProps
+ * @typedef {(<T extends string, P extends Record<string, unknown>>(type: T, props: P, value: string) => {type: T, value: string} & P)} BuildLiteralWithProps
+ * @typedef {(<T extends string, P extends Record<string, unknown>>(type: T, props: P) => {type: T} & P)} BuildVoidWithProps
+ * @typedef {(<T extends string, C extends Node[]>(type: T, children: C) => {type: T, children: C})} BuildParent
+ * @typedef {(<T extends string>(type: T, value: string) => {type: T, value: string})} BuildLiteral
+ * @typedef {(<T extends string>(type: T) => {type: T})} BuildVoid
+ */
+
+var u = /**
+ * @type {BuildVoid & BuildVoidWithProps & BuildLiteral & BuildLiteralWithProps & BuildParent & BuildParentWithProps}
+ */ (
+  /**
+   * @param {string} type Type of node
+   * @param {Props|ChildrenOrValue} [props] Additional properties for node (or `children` or `value`)
+   * @param {ChildrenOrValue} [value] `children` or `value` of node
+   * @returns {Node}
+   */
+  function (type, props, value) {
+    /** @type {Node} */
+    var node = {type: String(type)}
+
+    if (
+      (value === undefined || value === null) &&
+      (typeof props === 'string' || Array.isArray(props))
+    ) {
+      value = props
+    } else {
+      Object.assign(node, props)
+    }
+
+    if (Array.isArray(value)) {
+      node.children = value
+    } else if (value !== undefined && value !== null) {
+      node.value = String(value)
+    }
+
+    return node
+  }
+)
+
 ;// CONCATENATED MODULE: ./lib/renderers/new-template-check.js
 
 
 
 function newTemplateCheck(ctx) {
-  var {data} = ctx
-  var template = data.templatesByName[data.checkTemplateName]
+  const {data} = ctx
+  const template = data.templatesByName[data.checkTemplateName]
 
   if (data.checkTemplateChecks === undefined) {
     throw new Error(
@@ -30259,21 +30844,21 @@ function newTemplateCheck(ctx) {
     )
   }
 
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi! It seems some of the things asked in the template are missing? Please edit your post to fill out everything.'
       )
     ]),
-    unist_builder(
+    u(
       'list',
       {spread: false},
       data.checkTemplateChecks.map((d) =>
-        unist_builder('listItem', {spread: false, checked: Boolean(d.ok)}, [
-          unist_builder('paragraph', [
-            unist_builder('text', d.section),
-            unist_builder(
+        u('listItem', {spread: false, checked: Boolean(d.ok)}, [
+          u('paragraph', [
+            u('text', d.section),
+            u(
               'text',
               d.ok ? '' : ' (' + (d.ok === null ? 'missing' : 'todo') + ')'
             )
@@ -30281,21 +30866,21 @@ function newTemplateCheck(ctx) {
         ])
       )
     ),
-    unist_builder('paragraph', [
-      unist_builder(
+    u('paragraph', [
+      u(
         'text',
         'You won’t get any more notifications from me, but I’ll keep on updating this comment, and remove it when done!'
       )
     ]),
-    unist_builder(
+    u(
       'html',
       '<details><summary>If you need it, here’s the <a href="' +
         light(template.file.url, {escapeOnly: true}) +
         '">original template</a></summary>'
     ),
-    unist_builder('code', {lang: 'markdown'}, template.file.contents),
-    unist_builder('html', '</details>'),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('code', {lang: 'markdown'}, template.file.contents),
+    u('html', '</details>'),
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
@@ -30303,89 +30888,89 @@ function newTemplateCheck(ctx) {
 
 
 function newTemplateMissing(ctx, event) {
-  var {data} = ctx
-  var {post} = event
-  var {type} = post
-  var templates = Object.keys(data.templatesByName)
+  const {data} = ctx
+  const {post} = event
+  const {type} = post
+  const templates = Object.keys(data.templatesByName)
     .map((d) => data.templatesByName[d])
     .filter((d) => d.type === type)
 
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi! It seems you removed the template which we require. Here are our templates (pick the one you want to use and click *raw* to see its source):'
       )
     ]),
-    unist_builder(
+    u(
       'list',
       {spread: false},
       templates.map((d) =>
-        unist_builder('listItem', {spread: false}, [
-          unist_builder('paragraph', [
-            unist_builder('link', {url: d.file.url}, [unist_builder('inlineCode', d.file.basename)])
+        u('listItem', {spread: false}, [
+          u('paragraph', [
+            u('link', {url: d.file.url}, [u('inlineCode', d.file.basename)])
           ])
         ])
       )
     ),
-    unist_builder('paragraph', [
-      unist_builder(
+    u('paragraph', [
+      u(
         'text',
         'I won’t send you any further notifications about this, but I’ll keep on updating this comment, and hide it when done!'
       )
     ]),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
 ;// CONCATENATED MODULE: ./lib/renderers/no-duplicate.js
 
 
-var backlog =
+const backlog =
   'https://en.wikipedia.org/wiki/Scrum_(software_development)#Product_backlog'
 
 function noDuplicate(ctx, event) {
-  var {post} = event
-  var {type} = post
-  var kind = type === 'pr' ? 'pull request' : 'issue'
+  const {post} = event
+  const {type} = post
+  const kind = type === 'pr' ? 'pull request' : 'issue'
 
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder('text', 'Hi! Thanks for taking the time to contribute!')
+  return u('root', [
+    u('paragraph', [
+      u('text', 'Hi! Thanks for taking the time to contribute!')
     ]),
-    unist_builder('paragraph', [
-      unist_builder('text', 'Because we treat ' + kind + 's as our '),
-      unist_builder('link', {url: backlog}, [unist_builder('text', 'backlog')]),
-      unist_builder(
+    u('paragraph', [
+      u('text', 'Because we treat ' + kind + 's as our '),
+      u('link', {url: backlog}, [u('text', 'backlog')]),
+      u(
         'text',
         ', we close duplicates to focus our work and not have to touch the same chunk of code for the same reason multiple times. This is also why we may mark something as duplicate that isn’t an exact duplicate but is closely related.'
       )
     ]),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
 ;// CONCATENATED MODULE: ./lib/renderers/no-duplicate-maintainers.js
 
 
-var docs =
+const docs =
   'https://docs.github.com/en/free-pro-team@latest/github/managing-your-work-on-github/about-duplicate-issues-and-pull-requests'
 
 function noDuplicateMaintainers() {
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi team! It seems this post is a duplicate, but hasn’t been marked as such. Please post a comment w/ '
       ),
-      unist_builder('inlineCode', 'Duplicate of #123'),
-      unist_builder('text', '(no final '),
-      unist_builder('inlineCode', '.'),
-      unist_builder('text', ') to do so. See '),
-      unist_builder('link', {url: docs}, [unist_builder('text', 'GH docs')]),
-      unist_builder('text', ' for more info.')
+      u('inlineCode', 'Duplicate of #123'),
+      u('text', '(no final '),
+      u('inlineCode', '.'),
+      u('text', ') to do so. See '),
+      u('link', {url: docs}, [u('text', 'GH docs')]),
+      u('text', ' for more info.')
     ]),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
@@ -30393,51 +30978,51 @@ function noDuplicateMaintainers() {
 
 
 function noExternalMaintainers() {
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi team! Could you describe why this has been marked as external?'
       )
     ]),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
 ;// CONCATENATED MODULE: ./lib/renderers/no-question.js
 
 
-var no_question_backlog =
+const no_question_backlog =
   'https://en.wikipedia.org/wiki/Scrum_(software_development)#Product_backlog'
-var support = 'https://github.com/unifiedjs/.github/blob/main/support.md'
+const support = 'https://github.com/unifiedjs/.github/blob/main/support.md'
 
 function noQuestion(ctx, event) {
-  var {post} = event
-  var {type} = post
-  var kind = type === 'pr' ? 'pull request' : 'issue'
+  const {post} = event
+  const {type} = post
+  const kind = type === 'pr' ? 'pull request' : 'issue'
 
   // To do: dynamic support based on the repo / org?
 
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi! Thanks for reaching out! Because we treat ' + kind + 's as our '
       ),
-      unist_builder('link', {url: no_question_backlog}, [unist_builder('text', 'backlog')]),
-      unist_builder(
+      u('link', {url: no_question_backlog}, [u('text', 'backlog')]),
+      u(
         'text',
         ', we close ' +
           kind +
           's that are questions since they don’t represent a task to be completed.'
       )
     ]),
-    unist_builder('paragraph', [
-      unist_builder('text', 'See our '),
-      unist_builder('link', {url: support}, [unist_builder('text', 'support docs')]),
-      unist_builder('text', ' for how and where to ask questions.')
+    u('paragraph', [
+      u('text', 'See our '),
+      u('link', {url: support}, [u('text', 'support docs')]),
+      u('text', ' for how and where to ask questions.')
     ]),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
@@ -30445,14 +31030,14 @@ function noQuestion(ctx, event) {
 
 
 function noWontfixMaintainers() {
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi team! Could you describe why this has been marked as wontfix?'
       )
     ]),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
@@ -30460,46 +31045,46 @@ function noWontfixMaintainers() {
 
 
 function openMultiple(ctx, event) {
-  var {post} = event
-  var {type} = post
-  var kind = type === 'pr' ? 'pull request' : 'issue'
+  const {post} = event
+  const {type} = post
+  const kind = type === 'pr' ? 'pull request' : 'issue'
 
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi! Thanks for taking the time to contribute! This has been marked by a maintainer as being several ' +
           kind +
           's. Could you bring this down to a single thing, so that we can discuss each separately?'
       )
     ]),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
 ;// CONCATENATED MODULE: ./lib/renderers/open-needs-info.js
 
 
-var duck = 'https://rubberduckdebugging.com'
-var xy =
+const duck = 'https://rubberduckdebugging.com'
+const xy =
   'https://meta.stackexchange.com/questions/66377/what-is-the-xy-problem/66378#66378'
 
 function openNeedsInfo(ctx, event) {
-  var {post} = event
-  var {type} = post
-  var kind = type === 'pr' ? 'pull request' : 'issue'
+  const {post} = event
+  const {type} = post
+  const kind = type === 'pr' ? 'pull request' : 'issue'
 
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi! Thanks for taking the time to contribute! This has been marked by a maintainer as needing more info. It’s not clear yet whether this is an issue. Here are a couple tips:'
       )
     ]),
-    unist_builder('list', {spread: false}, [
-      unist_builder('listItem', {spread: false}, [
-        unist_builder('paragraph', [
-          unist_builder(
+    u('list', {spread: false}, [
+      u('listItem', {spread: false}, [
+        u('paragraph', [
+          u(
             'text',
             'Spend time framing the ' +
               kind +
@@ -30507,27 +31092,27 @@ function openNeedsInfo(ctx, event) {
           )
         ])
       ]),
-      unist_builder('listItem', {spread: false}, [
-        unist_builder('paragraph', [
-          unist_builder('text', 'Often, maintainers respond with '),
-          unist_builder('emphasis', [unist_builder('text', 'why')]),
-          unist_builder('text', ' for several back and forths; '),
-          unist_builder('link', {url: duck}, [unist_builder('text', 'rubber duck debugging')]),
-          unist_builder('text', ' might help avoid that')
+      u('listItem', {spread: false}, [
+        u('paragraph', [
+          u('text', 'Often, maintainers respond with '),
+          u('emphasis', [u('text', 'why')]),
+          u('text', ' for several back and forths; '),
+          u('link', {url: duck}, [u('text', 'rubber duck debugging')]),
+          u('text', ' might help avoid that')
         ])
       ]),
-      unist_builder('listItem', {spread: false}, [
-        unist_builder('paragraph', [
-          unist_builder('text', 'Folks posting issues sometimes fall for '),
-          unist_builder('link', {url: xy}, [unist_builder('text', 'xy problems')]),
-          unist_builder(
+      u('listItem', {spread: false}, [
+        u('paragraph', [
+          u('text', 'Folks posting issues sometimes fall for '),
+          u('link', {url: xy}, [u('text', 'xy problems')]),
+          u(
             'text',
             ': asking for a certain solution instead of raising the root problem'
           )
         ])
       ])
     ]),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
@@ -30535,45 +31120,45 @@ function openNeedsInfo(ctx, event) {
 
 
 function openNeedsRepro() {
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi! Thanks for taking the time to contribute! This has been marked by a maintainer as needing a reproduction: It’s not yet clear whether this is a problem. Here are a couple tips:'
       )
     ]),
-    unist_builder('list', {spread: false}, [
-      unist_builder('listItem', {spread: false}, [
-        unist_builder('paragraph', [
-          unist_builder(
+    u('list', {spread: false}, [
+      u('listItem', {spread: false}, [
+        u('paragraph', [
+          u(
             'text',
             'Thoroughly document how to reproduce the problem, in steps or with code'
           )
         ])
       ]),
-      unist_builder('listItem', {spread: false}, [
-        unist_builder('paragraph', [
-          unist_builder(
+      u('listItem', {spread: false}, [
+        u('paragraph', [
+          u(
             'text',
             'Don’t link to your complete project: make the repro as tiny as possible, preferrably with only the problematic project in question'
           )
         ])
       ]),
-      unist_builder('listItem', {spread: false}, [
-        unist_builder('paragraph', [
-          unist_builder(
+      u('listItem', {spread: false}, [
+        u('paragraph', [
+          u(
             'text',
             'Make sure you’re on the latest versions of projects (and node/npm/yarn!)'
           )
         ])
       ]),
-      unist_builder('listItem', {spread: false}, [
-        unist_builder('paragraph', [
-          unist_builder('text', 'The best issue report is a failing test proving it')
+      u('listItem', {spread: false}, [
+        u('paragraph', [
+          u('text', 'The best issue report is a failing test proving it')
         ])
       ])
     ]),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
@@ -30581,14 +31166,14 @@ function openNeedsRepro() {
 
 
 function phaseless() {
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi team! I don’t know what’s up as there’s no phase label. Please add one so I know where it’s at.'
       )
     ]),
-    unist_builder('paragraph', [unist_builder('text', 'Thanks,\n— bb')])
+    u('paragraph', [u('text', 'Thanks,\n— bb')])
   ])
 }
 
@@ -30596,13 +31181,13 @@ function phaseless() {
 
 
 function postClosedIssueMaintainers() {
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder('text', 'Hi! This was closed. Team: If this was fixed, please add '),
-      unist_builder('inlineCode', 'phase/solved'),
-      unist_builder('text', '. Otherwise, please add one of the '),
-      unist_builder('inlineCode', 'no/*'),
-      unist_builder('text', ' labels.')
+  return u('root', [
+    u('paragraph', [
+      u('text', 'Hi! This was closed. Team: If this was fixed, please add '),
+      u('inlineCode', 'phase/solved'),
+      u('text', '. Otherwise, please add one of the '),
+      u('inlineCode', 'no/*'),
+      u('text', ' labels.')
     ])
   ])
 }
@@ -30611,14 +31196,14 @@ function postClosedIssueMaintainers() {
 
 
 function postClosedPrMaintainers() {
-  return unist_builder('root', [
-    unist_builder('paragraph', [
-      unist_builder(
+  return u('root', [
+    u('paragraph', [
+      u(
         'text',
         'Hi! This was closed. Team: If this was merged, please describe when this is likely to be released. Otherwise, please add one of the '
       ),
-      unist_builder('inlineCode', 'no/*'),
-      unist_builder('text', ' labels.')
+      u('inlineCode', 'no/*'),
+      u('text', ' labels.')
     ])
   ])
 }
@@ -30627,54 +31212,54 @@ function postClosedPrMaintainers() {
 
 
 function yesMaintainers(ctx, event) {
-  var {post} = event
-  var {type} = post
-  var kind = type === 'pr' ? 'pull request' : 'issue'
+  const {post} = event
+  const {type} = post
+  const kind = type === 'pr' ? 'pull request' : 'issue'
 
   return kind === 'issue'
-    ? unist_builder('root', [
-        unist_builder('paragraph', [
-          unist_builder(
+    ? u('root', [
+        u('paragraph', [
+          u(
             'text',
             'Hi! This was marked as ready to be worked on! Note that while this is ready to be worked on, nothing is said about priority: it may take a while for this to be solved.'
           )
         ]),
-        unist_builder('paragraph', [
-          unist_builder('text', 'Is this something you can and want to work on?')
+        u('paragraph', [
+          u('text', 'Is this something you can and want to work on?')
         ]),
-        unist_builder('paragraph', [
-          unist_builder('text', 'Team: please use the '),
-          unist_builder('inlineCode', 'area/*'),
-          unist_builder('text', ' (to describe the scope of the change), '),
-          unist_builder('inlineCode', 'platform/*'),
-          unist_builder('text', ' (if this is related to a specific one), and '),
-          unist_builder('inlineCode', 'semver/*'),
-          unist_builder('text', ' and '),
-          unist_builder('inlineCode', 'type/*'),
-          unist_builder(
+        u('paragraph', [
+          u('text', 'Team: please use the '),
+          u('inlineCode', 'area/*'),
+          u('text', ' (to describe the scope of the change), '),
+          u('inlineCode', 'platform/*'),
+          u('text', ' (if this is related to a specific one), and '),
+          u('inlineCode', 'semver/*'),
+          u('text', ' and '),
+          u('inlineCode', 'type/*'),
+          u(
             'text',
             ' labels to annotate this. If this is first-timers friendly, add '
           ),
-          unist_builder('inlineCode', 'good first issue'),
-          unist_builder('text', ' and if this could use help, add '),
-          unist_builder('inlineCode', 'help wanted'),
-          unist_builder('text', '.')
+          u('inlineCode', 'good first issue'),
+          u('text', ' and if this could use help, add '),
+          u('inlineCode', 'help wanted'),
+          u('text', '.')
         ])
       ])
-    : unist_builder('root', [
-        unist_builder('paragraph', [
-          unist_builder('text', 'Hi! This is accepted and can go somewhere!')
+    : u('root', [
+        u('paragraph', [
+          u('text', 'Hi! This is accepted and can go somewhere!')
         ]),
-        unist_builder('paragraph', [
-          unist_builder('text', 'Team: please review this PR and use the '),
-          unist_builder('inlineCode', 'area/*'),
-          unist_builder('text', ' (to describe the scope of the change), '),
-          unist_builder('inlineCode', 'platform/*'),
-          unist_builder('text', ' (if this is related to a specific one), and '),
-          unist_builder('inlineCode', 'semver/*'),
-          unist_builder('text', ' and '),
-          unist_builder('inlineCode', 'type/*'),
-          unist_builder('text', ' labels to annotate this.')
+        u('paragraph', [
+          u('text', 'Team: please review this PR and use the '),
+          u('inlineCode', 'area/*'),
+          u('text', ' (to describe the scope of the change), '),
+          u('inlineCode', 'platform/*'),
+          u('text', ' (if this is related to a specific one), and '),
+          u('inlineCode', 'semver/*'),
+          u('text', ' and '),
+          u('inlineCode', 'type/*'),
+          u('text', ' labels to annotate this.')
         ])
       ])
 }
