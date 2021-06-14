@@ -165,6 +165,7 @@
 - if: on:post-labeled:phase/solved
   then:
     - remove-labels:phase/{new,no,open,yes}
+    - remove-labels:{help-wanted,good-first-issue}
     - minimize-comments:post-closed
     - forget-comments:post-closed
 
