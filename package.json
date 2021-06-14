@@ -11,10 +11,11 @@
   "contributors": [
     "Titus Wormer <tituswormer@gmail.com> (https://wooorm.com)"
   ],
-  "main": "index.js",
+  "type": "module",
+  "main": "index.cjs",
   "files": [
     "lib/",
-    "index.js"
+    "index.cjs"
   ],
   "devDependencies": {
     "@actions/core": "^1.0.0",
@@ -44,7 +45,7 @@
   },
   "scripts": {
     "format": "remark . -qfo && prettier . --write && xo --fix",
-    "build": "ncc build main.js -o . --license license",
+    "build": "ncc build main.js -o . --license license && mv index.js index.cjs",
     "test": "npm run format && npm run build"
   },
   "prettier": {
@@ -70,7 +71,7 @@
       "unicorn/prefer-type-error": "off"
     },
     "ignores": [
-      "index.js"
+      "index.cjs"
     ]
   },
   "remarkConfig": {

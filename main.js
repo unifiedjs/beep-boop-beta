@@ -1,14 +1,11 @@
-'use strict'
-
-var fs = require('fs')
-var path = require('path')
-var yaml = require('js-yaml')
-var beep = require('./lib/beep/index.js')
-var custom = require('./lib/custom/index.js')
-var renderers = require('./lib/renderers/index.js')
+import fs from 'fs'
+import yaml from 'js-yaml'
+import {beep} from './lib/beep/index.js'
+import {custom} from './lib/custom/index.js'
+import {renderers} from './lib/renderers/index.js'
 
 beep({
-  tasks: yaml.load(String(fs.readFileSync(path.join(__dirname, 'tasks.yml')))),
+  tasks: yaml.load(String(fs.readFileSync('tasks.yml'))),
   plugins: [custom],
   renderers
 })

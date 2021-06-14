@@ -87,7 +87,7 @@ You can bundle the code up with [`@vercel/ncc`][ncc] (after installing the used
 dependencies):
 
 ```sh
-ncc build index.js -o .github/actions/my-action --license license
+ncc build index.cjs -o .github/actions/my-action --license license
 ```
 
 This example creates a [local action][gh-action-location], but you might want to
@@ -104,7 +104,7 @@ inputs:
     required: true
 runs:
   using: node12
-  main: index.js
+  main: index.cjs
 ```
 
 </details>
