@@ -124,8 +124,11 @@
 - if: on:post-labeled:no/question
   then:
     - remove-labels:no/{duplicate,external,invalid,wontfix}
-    - unminimize-comments:no
-    - comment:no,no-question
+    - sleep:30s
+    - if-not: recent-comment:team
+      then:
+        - unminimize-comments:no
+        - comment:no,no-question
 - if: on:post-labeled:no/wontfix
   then:
     - remove-labels:no/{duplicate,external,invalid,question}
