@@ -30,6 +30,7 @@
       then: add-labels:phase/open
 # Update auto triage.
 - if: on:post-edited
+  if-not: has-labels:phase/{no,solved,yes}
   then:
     - if: custom:check-template:missing
       then:
