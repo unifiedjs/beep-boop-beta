@@ -3450,7 +3450,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "5.3.1";
+const VERSION = "5.3.3";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -30470,6 +30470,15 @@ async function templates(ctx, event) {
   let status
 
   if (data.checkTemplateStatus) {
+    return
+  }
+
+  // Since GH issue forms exist (but not PR forms), we can assume that all the
+  // correct fields are filled out.
+  if (post.type === 'issue') {
+    data.checkTemplateStatus = 'correct'
+    data.checkTemplateChecks = []
+    data.checkTemplateName = 'unknown'
     return
   }
 
