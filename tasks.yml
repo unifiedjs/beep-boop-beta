@@ -6,6 +6,7 @@
     - if: is:pr
       then: comment:post-closed,post-closed-pr-maintainers
     - if: is:issue
+      if-not: has-labels:phase/{no,solved}
       then: comment:post-closed,post-closed-issue-maintainers
 - if: on:post-reopened
   then: remove-labels:phase/no
@@ -127,7 +128,7 @@
 - if: on:post-labeled:no/wontfix
   then:
     - remove-labels:no/{duplicate,external,invalid,question}
-    - ifNot: recent-comment:team
+    - if-not: recent-comment:team
       then:
         - comment:no,no-wontfix
         - sleep:5m
