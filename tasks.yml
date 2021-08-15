@@ -1,5 +1,6 @@
 # Start process.
 - if: on:post-opened
+  if-not: has-labels:phase/*
   then: add-labels:phase/new
 - if: on:post-closed
   then:
