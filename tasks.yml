@@ -183,3 +183,11 @@
   then:
     - minimize-comments:phaseless
     - forget-comments:phaseless
+
+# SemVer
+- if: on:post-labeled:semver/patch
+  then: remove-labels:semver/{minor,major}
+- if: on:post-labeled:semver/minor
+  then: remove-labels:semver/{patch,major}
+- if: on:post-labeled:semver/major
+  then: remove-labels:semver/{patch,minor}
